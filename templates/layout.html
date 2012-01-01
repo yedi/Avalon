@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<title>Avalon</title>
+<link rel="stylesheet/less" type="text/css" href="static/bootstrap/lib/bootstrap.less">
+<link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='avalon.less') }}">
+{% block header %}{% endblock %}
+<script type="text/javascript" src="{{ url_for('static', filename='less-1.1.5.min.js') }}"></script>
+<div class=page>
+  <div>
+    <a id="home-text" href="{{ url_for('index') }}" ><span class="h1">Avalon</span></a>
+    <span id="right-links">
+      {% if not session.logged_in %}
+        <a href="{{ url_for('login') }}">Login</a> | 
+        <a href="{{ url_for('register') }}">Register</a>
+      {% else %}
+        {{ session.username }} |
+        <a href="{{ url_for('logout') }}">Logout</a>
+      {% endif %}
+    </span>
+  </div>
+  {% for message in get_flashed_messages() %}
+    <div class=flash>{{ message }}</div>
+  {% endfor %}
+  {% block body %}{% endblock %}
+</div>

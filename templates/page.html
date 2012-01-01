@@ -1,0 +1,339 @@
+{% extends "layout.html" %}
+{% block header %}
+<script type="text/javascript" src="{{ url_for('static', filename='jquery-1.7.js') }}"> </script>
+<script type="text/javascript" language="javascript">
+var item_list = {};
+var node_list = {};
+var slide_list = [];
+var parent_id = null;
+var child_id = null;
+{% if item %}
+  node_list[{{ item['id'] }}] = {
+    id: {{ item['id'] }},
+    children: [],
+  };
+  parent_id = {{ item['id'] }};
+
+  item_list[{{ item['id'] }}] = eval({{ item|tojson|safe }});
+{% endif %}
+
+{% if children %}
+  {% for child in children %}
+    node_list[parent_id].children.push({{ child['id'] }});
+    item_list[{{ child['id'] }}] = eval({{ child|tojson|safe }});
+  {% endfor %}
+{% endif %}
+
+var test = 'test';
+
+// variable for manipulating slides
+var currentPosition = 0;
+var slideWidth = 480;
+var slides;
+var numberOfSlides;
+var lastSlide = 941;
+
+
+/**
+ * Adds multiple item objects to the 
+ * How can I make it so that this function can take in any amount of parameters?
+ * Also, make it so that the function gracefully handles both arrays of items and singular items
+ * @todo write the function
+ */
+function addToItemList() {
+}
+
+/**
+ * checks to see if node is in node_list 
+ */
+function inNodeList(node_id) {
+  var ret = false;
+  //for (var i = 0; i < node_list.length; i++) {
+  for (var key in node_list) {
+    if (node_id === node_list[key].id){
+      ret = true;
+      break;
+    }
+  }
+  return ret;
+}
+
+/**
+ * Handles voting functionality. Sends vote action to the server and refreshes page
+ * @todo Change so that it doesn't refresh page and just updates the vote count on the current page
+ */
+function vote(vote_type, item_id) {
+  var URL = "{{ url_for('vote') }}";
+  $.post(URL,{item_id: item_id, user_id: {{ session.user_id }}, vote_type: vote_type}, 
+  function (data)
+  {
+    window.location.replace(" {{ url_for('item_page', item_id = session.current_item) }} ");
+    //$("#cr").html(data).show().fadeout(8000);
+  });
+  return false;
+}
+
+/**
+ * Creates a node dom element from the given item id
+ */
+function createNodeElement(item_id) {
+  var item = item_list[item_id];
+
+  var votecount = $('<span />')
+      .addClass('node-votecount')
+      .text(item.upvotes - item.downvotes);
+
+  var title = $('<span />')
+      .text(item.title);
+
+  //returns the element for the up/down vote icon
+  var vote_element = function (type) {
+    var icon = (type === 'up')?'+':'-';
+    var ele = $('<a />')
+        .addClass('node-vote')
+        .attr('href', '#')
+        .attr('onclick', "vote('" + type + "', " + item.id + ")")
+        //.click(vote(type, item.id))
+        .text(icon);
+    return ele;
+  }
+
+  var node_title = $('<span />')
+      .addClass('node-title')
+      .append(vote_element('up'), votecount, title, vote_element('down'));
+  
+  var body = $('<span />')
+      .addClass('node-body')
+      .text(item.body);
+
+  var node_element = $('<span />')
+      .addClass('node')
+      .append(node_title, body);
+
+  return node_element;
+}
+
+/**
+ * Creates a child dom element from the given item id
+ */
+function createChildElement(item_id, type) {
+  var item = item_list[item_id];
+
+  var title = $('<span />')
+      .addClass('child-title')
+      .text(item.title);
+
+  var title_link = $('<a />')
+      .addClass('child-link')
+      .attr('name', 'cl_' + item_id)
+      .attr('href', '#')
+      .attr('test', "displayChild(" + item.id + ", '" + type + "')")
+      //.click(displayChild(item.id, 'child'))
+      .append(title);
+
+  var body = $('<span />')
+      .addClass('child-body')
+      .text(item.body);
+
+  var child_element = $('<li />')
+      .text(item.upvotes - item.downvotes)
+      .append(title_link, body);
+
+  return child_element;
+}
+
+/**
+ * Renders either the child slide or the parent slide.
+ */
+function renderSlide(type) { 
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+
+  //if node information isn't store locally, get the info from server
+  if (!(inNodeList(slide_id))) {
+    slide.html('Loading...');
+    var URL = "{{ url_for('displayChild') }}";
+    $.post(URL, {item_id: slide_id}, 
+    function (data)
+    {
+      var item = data.child;
+      var children = data.c_children;
+      
+      //adds the new item to the item list, 
+      //creates a node object for the new item and stores it in the node list
+      item_list[item.id] = item;
+      node_list[item.id] = {
+        id: item.id,
+        children: new Array(),
+      };
+
+      //adds the children each to the item list, 
+      //updates the new item's node object with the list of it's children
+      for (var i = 0; i < children.length; i++) {
+        item_list[children[i].id] = children[i];
+        node_list[item.id].children.push(children[i].id);
+      };
+
+      //rerender the slide to overwrite 'Loading...'
+      renderSlide(type);
+    });
+
+    return;    
+  }
+
+  var node = node_list[slide_id];
+
+  var children_list = $('<ul />');
+  for (var i = 0; i < node.children.length; i++) {
+    children_list.append(createChildElement(node.children[i], type));
+  };
+
+  var children = $('<span />')
+      .addClass('children')
+      .append($('<h2 />').text('Children'), children_list);
+
+  slide
+    .empty()
+    .append(createNodeElement(node.id), children);
+}
+
+/*
+ * Create the initial parent and child node-slides
+ */
+function createInitalSlides() {
+  var slide = function (id_string) {
+    var ele = $('<span />')
+        .addClass('span8 node-slide')
+        .attr('id', id_string);
+    return ele;
+  };
+  var initial_slides = [slide('parent-node'), slide('child-node')];
+  slide_list = slide_list.concat(initial_slides);
+  $('#slides-container').append(initial_slides[0], initial_slides[1]);
+  return $('.node-slide');
+}
+
+/**
+ * Changes the parent node and child node to the nodes at the current position
+ */
+function updateNodes() {
+  $('#parent-node').removeAttr('id');
+  $('#child-node').removeAttr('id');
+  slide_list[currentPosition].attr('id', 'parent-node');
+  slide_list[currentPosition + 1].attr('id', 'child-node');
+}
+
+/**
+ * shifts slides and sets the currentPosition
+ */
+function shiftSlides(shift_num) {
+  //create an empty slide element if we have to add elements to the slide_list
+  //checks if the list of slides is smaller than the min number of slides needed for the shift
+  //currentPos is always at maximum 2 smaller than the lenght of the slide_list
+  if (slide_list.length < currentPosition + 2 + shift_num) {
+    var ele = $('<span />').addClass('span8 node-slide')
+  }
+  for (var i = 0; i < (currentPosition + 2 + shift_num) - slide_list.length; i++) {
+    slide_list.push(ele);
+    $('#slideInner').append(ele);
+  }
+
+  if (shift_num < 0) {
+    for (var i = 0; i > shift_num; i--) {
+      $('#child-node').remove();
+      slide_list.pop();
+    }
+  }
+
+  currentPosition += shift_num;
+  numberOfSlides += shift_num;
+  updateNodes();
+  $('#slideInner').animate({'marginLeft' : -20 + slideWidth*(-currentPosition)});
+  test = 'lol';
+}
+
+/**
+ * Display the selected child
+ */
+function displayChild(item_id, from) {
+  if (from === 'parent') {
+    child_id = item_id;
+    renderSlide('child');
+  }
+  else {
+    shiftSlides(1);
+    parent_id = child_id;
+    child_id = item_id;
+    renderSlide('parent');
+    renderSlide('child');
+  }
+  return false;
+}
+
+</script>
+<script type="text/javascript" language="javascript">
+//DOCUMENT READY ==============================================================
+$(document).ready(function() {
+  //toggle
+  $(".add-entry").hide();
+  $("#toggleButton").click(function() {
+    $(".add-entry").slideToggle(500);
+  });
+
+  slides = createInitalSlides();
+  numberOfSlides = slides.length;
+
+  // Remove scrollbar in JS
+  $('.slides-container').css('overflow', 'hidden');
+
+  // Wrap all .slides with #slideInner div
+  slides
+    .wrapAll('<div class="row" id="slideInner"></div>')
+    // Float left to display horizontally, readjust .slides width
+    //.css({'float' : 'left', 'width' : slideWidth});
+
+  // Set #slideInner width equal to total width of all slides
+  //$('#slideInner').css('width', slideWidth * numberOfSlides);
+
+  renderSlide('parent');
+
+  $('#parent-node .child-link').on("click", function() {
+    //alert('test');
+    // var this_id = parseInt($(this).attr('name').split('_')[1], 10);
+    // displayChild(this_id, 'parent');
+    displayChild(parseInt($(this).attr('name').split('_')[1], 10), 'parent');
+  });
+  $('#child-node').find('.child-link').on("click", function() {
+    displayChild(parseInt($(this).attr('name').split('_')[1], 10), 'child');
+  });
+});
+</script>
+{% endblock %}
+{% block body %}
+  <div class="container">
+    <a href="#" onclick="shiftSlides(-1)">Back</a>
+    <div id="slides-container">
+    </div>
+  </div>
+  <!--
+    <input id="toggleButton" type=button value="Add Item"><br />
+    <div class="add-entry">
+      <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
+        <dl>
+          <dt>Title:
+          <dd><input type="text" size=30 name=title>
+          <dt>Body:
+          <dd><textarea name="body" rows=5 cols=40></textarea>
+          <input type="hidden" name="parent" value={{ item['id'] }} >
+          <input type="hidden" name="user_id" 
+          {% if not session.logged_in %}
+            value=0>
+          {% else %}
+            value="{{ session.user_id }}">
+          {% endif %}
+          <dd><input type="submit" value="Add Item">
+        </dl>
+      </form>
+    </div>
+    -->
+{% endblock %}
