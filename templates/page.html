@@ -172,11 +172,16 @@ function createChildElement(item_id, type) {
       .addClass('child-vc')
       .text(item.upvotes - item.downvotes);
 
+  var title_body = $('<span />')
+      //.css({"display": "block", "float": "left"})
+      .addClass('child-content')
+      .append(title_link, body);
+
   var child_element = $('<li />')
       .addClass('child')
       .attr('id', 'c_' + item.id)
       //.text(item.upvotes - item.downvotes)
-      .append(votecount, title_link, body);
+      .append(votecount, title_body);
 
   return child_element;
 }
@@ -262,6 +267,15 @@ function updateNodes() {
   slide_list[currentPosition + 1].attr('id', 'child-node');
 }
 
+/*
+ * Highlights the child list element of the current child
+ */
+function highlightChild() {
+  if (!child_id) return;
+  $('.child-highlight').removeClass('child-highlight');
+  $("#c_" + child_id).addClass("child-highlight");
+}
+
 /**
  * shifts slides and sets the currentPosition
  */
@@ -292,7 +306,7 @@ function shiftSlides(shift_num) {
 }
 
 /**
- * Display the selected child
+ * Display the selected child and updates the child and parent ids
  */
 function displayChild(item_id, from) {
   if (from === 'parent') {
@@ -303,9 +317,11 @@ function displayChild(item_id, from) {
     shiftSlides(1);
     parent_id = child_id;
     child_id = item_id;
-    renderSlide('parent');
+    //renderSlide('parent');
+    $('#parent-node').html(slide_list[currentPosition].html());
     renderSlide('child');
   }
+  highlightChild();
   return false;
 }
 
@@ -336,22 +352,34 @@ $(document).ready(function() {
 
   renderSlide('parent');
   var disp_id;
+
   $('#parent-node').on("click", function() {
     //alert('test');
   });
+
+  //display the clicked child node
   $('#parent-node').on("click", '.child-link', function() {
     disp_id = parseInt($(this).attr('name').split('_')[1], 10);
     if (disp_id === child_id) return;
     displayChild(disp_id, 'parent');
+    //$('.child-highlight').removeClass('child-highlight');
+    //$(this).parent().parent().addClass("child-highlight");
   });
+
   $('#child-node').on("click", '.child-link', function() {
     disp_id = parseInt($(this).attr('name').split('_')[1], 10);
+    if (disp_id === child_id) return;
     displayChild(disp_id, 'child');
+    //$('.child-highlight').removeClass('child-highlight');
+    //$(this).parent().parent().addClass("child-highlight");
   });
+
+  //shift back one level
   $('#back').on("click", function(){
     shiftSlides(-1)
     parent_id = getIdOf(slide_list[currentPosition]);
     child_id = getIdOf(slide_list[currentPosition + 1]);
+    highlightChild();
   });
 });
 </script>
