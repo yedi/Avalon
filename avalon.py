@@ -218,12 +218,15 @@ def process_vote(item_id, user_id, vote_type):
             [upvote_count, downvote_count, item_id])
 
     g.db.commit()
+    return upvote_count, downvote_count
 
 
 @app.route('/vote', methods=['POST'])
 def vote():
-    process_vote(request.form['item_id'], request.form['user_id'], request.form['vote_type'])
-    return redirect(url_for('item_page', item_id=session['current_item']))
+    uv_c, dv_c = process_vote(request.form['item_id'], request.form['user_id'], request.form['vote_type'])
+    # return redirect(url_for('item_page', item_id=session['current_item']))
+    return jsonify(uv_c=uv_c, dv_c=dv_c)
+
 
 @app.route('/displayChild', methods=['POST'])
 def displayChild():

@@ -68,6 +68,17 @@ function getIdOf(node) {
 }
 
 /**
+ * changes the votecount of the given item everywhere the item is stored
+ */
+function updateVC(item_id, uv_c, dv_c) {
+  item_list[item_id].upvotes += uv_c;
+  item_list[item_id].downvotes += dv_c;
+  var new_vc = item_list[item_id].upvotes - item_list[item_id].downvotes;
+  $('#n_' + item_id + ' .vc-num').text(new_vc);
+  $('#c_' + item_id + ' .child-vc').text(new_vc);
+}
+
+/**
  * Handles voting functionality. Sends vote action to the server and refreshes page
  * @todo Change so that it doesn't refresh page and just updates the vote count on the current page
  */
@@ -76,8 +87,9 @@ function vote(vote_type, item_id) {
   $.post(URL,{item_id: item_id, user_id: {{ session.user_id }}, vote_type: vote_type}, 
   function (data)
   {
-    window.location.replace(" {{ url_for('item_page', item_id = session.current_item) }} ");
+    //window.location.replace(" {{ url_for('item_page', item_id = session.current_item) }} ");
     //$("#cr").html(data).show().fadeout(8000);
+    updateVC(item_id, data.uv_c, data.dv_c);
   });
   return false;
 }
@@ -103,9 +115,13 @@ function createNodeElement(item_id) {
     return ele;
   }
 
-    var votecount = $('<span />')
-      .addClass('node-vc span1')
-      .append(vote_element('up'), vote_element('down'), (item.upvotes - item.downvotes));
+  var vc_num = $('<span />')
+    .addClass('vc-num')
+    .text(item.upvotes - item.downvotes);
+
+  var votecount = $('<span />')
+    .addClass('node-vc')
+    .append(vote_element('up'), vote_element('down'), vc_num);
 
 
   var node_title = $('<span />')
@@ -137,7 +153,7 @@ function createChildElement(item_id, type) {
 
   var title = $('<span />')
       .addClass('child-title')
-      .text(item.id + " | " + item.title);
+      .text(item.title);
 
   var title_link = $('<a />')
       .addClass('child-link')
@@ -153,11 +169,12 @@ function createChildElement(item_id, type) {
       .text(item.body);
 
   var votecount = $('<span />')
-      .addClass('child_vc')
+      .addClass('child-vc')
       .text(item.upvotes - item.downvotes);
 
   var child_element = $('<li />')
-      .addClass('child-l')
+      .addClass('child')
+      .attr('id', 'c_' + item.id)
       //.text(item.upvotes - item.downvotes)
       .append(votecount, title_link, body);
 
@@ -341,7 +358,8 @@ $(document).ready(function() {
 {% endblock %}
 {% block body %}
   <div class="container">
-    <span href="#" id="back"><a href="#" onclick="return false;">Back</a></span>
+    <div id="back"><a href="#" onclick="return false;">Back</a></div>
+    <br />
     <div id="slides-container">
     </div>
   </div>
