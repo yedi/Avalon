@@ -292,6 +292,9 @@ function shiftSlides(shift_num) {
   }
 
   if (shift_num < 0) {
+    //checks whether the number we're shifting goes further than the start of the list of slides
+    if (currentPosition + shift_num < 0) return false;
+
     for (var i = 0; i > shift_num; i--) {
       $('#child-node').remove();
       slide_list.pop();
@@ -302,7 +305,7 @@ function shiftSlides(shift_num) {
   numberOfSlides += shift_num;
   updateNodes();
   $('#slideInner').animate({'marginLeft' : -20 + slideWidth*(-currentPosition)});
-  test = 'lol';
+  return true;
 }
 
 /**
@@ -376,7 +379,7 @@ $(document).ready(function() {
 
   //shift back one level
   $('#back').on("click", function(){
-    shiftSlides(-1)
+    if (!shiftSlides(-1)) return;
     parent_id = getIdOf(slide_list[currentPosition]);
     child_id = getIdOf(slide_list[currentPosition + 1]);
     highlightChild();
