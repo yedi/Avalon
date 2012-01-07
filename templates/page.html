@@ -1,5 +1,6 @@
 {% extends "layout.html" %}
 {% block header %}
+<link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='page.less') }}">
 <script type="text/javascript" src="{{ url_for('static', filename='jquery-1.7.js') }}"> </script>
 <script type="text/javascript" language="javascript">
 var item_list = {};
@@ -59,6 +60,14 @@ function inNodeList(node_id) {
 }
 
 /**
+ * gets the ID from an node html element 
+ */
+function getIdOf(node) {
+  var n_id = node.find('.node').attr('id');
+  return parseInt(n_id.split('_')[1], 10);
+}
+
+/**
  * Handles voting functionality. Sends vote action to the server and refreshes page
  * @todo Change so that it doesn't refresh page and just updates the vote count on the current page
  */
@@ -79,18 +88,14 @@ function vote(vote_type, item_id) {
 function createNodeElement(item_id) {
   var item = item_list[item_id];
 
-  var votecount = $('<span />')
-      .addClass('node-votecount')
-      .text(item.upvotes - item.downvotes);
-
   var title = $('<span />')
-      .text(item.title);
+      .text(item.id + " | " + item.title);
 
   //returns the element for the up/down vote icon
   var vote_element = function (type) {
     var icon = (type === 'up')?'+':'-';
     var ele = $('<a />')
-        .addClass('node-vote')
+        .addClass('nv-' + type)
         .attr('href', '#')
         .attr('onclick', "vote('" + type + "', " + item.id + ")")
         //.click(vote(type, item.id))
@@ -98,17 +103,28 @@ function createNodeElement(item_id) {
     return ele;
   }
 
+    var votecount = $('<span />')
+      .addClass('node-vc span1')
+      .append(vote_element('up'), vote_element('down'), (item.upvotes - item.downvotes));
+
+
   var node_title = $('<span />')
       .addClass('node-title')
-      .append(vote_element('up'), votecount, title, vote_element('down'));
-  
+      //.append(vote_element('up'), votecount, title, vote_element('down'));
+      .append(votecount, item.title);
+
   var body = $('<span />')
       .addClass('node-body')
       .text(item.body);
 
   var node_element = $('<span />')
       .addClass('node')
+      .attr('id', 'n_' + item.id)
       .append(node_title, body);
+
+  // node_element.getID = function() {
+  //   getID();
+  // };
 
   return node_element;
 }
@@ -121,23 +137,29 @@ function createChildElement(item_id, type) {
 
   var title = $('<span />')
       .addClass('child-title')
-      .text(item.title);
+      .text(item.id + " | " + item.title);
 
   var title_link = $('<a />')
       .addClass('child-link')
       .attr('name', 'cl_' + item_id)
       .attr('href', '#')
-      .attr('test', "displayChild(" + item.id + ", '" + type + "')")
+      //.attr('test', "displayChild(" + item.id + ", '" + type + "')")
       //.click(displayChild(item.id, 'child'))
+      //.click(function(){displayChild(item.id, this)})
       .append(title);
 
   var body = $('<span />')
       .addClass('child-body')
       .text(item.body);
 
+  var votecount = $('<span />')
+      .addClass('child_vc')
+      .text(item.upvotes - item.downvotes);
+
   var child_element = $('<li />')
-      .text(item.upvotes - item.downvotes)
-      .append(title_link, body);
+      .addClass('child-l')
+      //.text(item.upvotes - item.downvotes)
+      .append(votecount, title_link, body);
 
   return child_element;
 }
@@ -229,7 +251,7 @@ function updateNodes() {
 function shiftSlides(shift_num) {
   //create an empty slide element if we have to add elements to the slide_list
   //checks if the list of slides is smaller than the min number of slides needed for the shift
-  //currentPos is always at maximum 2 smaller than the lenght of the slide_list
+  //currentPos is always at maximum 2 smaller than the length of the slide_list
   if (slide_list.length < currentPosition + 2 + shift_num) {
     var ele = $('<span />').addClass('span8 node-slide')
   }
@@ -296,22 +318,30 @@ $(document).ready(function() {
   //$('#slideInner').css('width', slideWidth * numberOfSlides);
 
   renderSlide('parent');
-
-  $('#parent-node .child-link').on("click", function() {
+  var disp_id;
+  $('#parent-node').on("click", function() {
     //alert('test');
-    // var this_id = parseInt($(this).attr('name').split('_')[1], 10);
-    // displayChild(this_id, 'parent');
-    displayChild(parseInt($(this).attr('name').split('_')[1], 10), 'parent');
   });
-  $('#child-node').find('.child-link').on("click", function() {
-    displayChild(parseInt($(this).attr('name').split('_')[1], 10), 'child');
+  $('#parent-node').on("click", '.child-link', function() {
+    disp_id = parseInt($(this).attr('name').split('_')[1], 10);
+    if (disp_id === child_id) return;
+    displayChild(disp_id, 'parent');
+  });
+  $('#child-node').on("click", '.child-link', function() {
+    disp_id = parseInt($(this).attr('name').split('_')[1], 10);
+    displayChild(disp_id, 'child');
+  });
+  $('#back').on("click", function(){
+    shiftSlides(-1)
+    parent_id = getIdOf(slide_list[currentPosition]);
+    child_id = getIdOf(slide_list[currentPosition + 1]);
   });
 });
 </script>
 {% endblock %}
 {% block body %}
   <div class="container">
-    <a href="#" onclick="shiftSlides(-1)">Back</a>
+    <span href="#" id="back"><a href="#" onclick="return false;">Back</a></span>
     <div id="slides-container">
     </div>
   </div>
