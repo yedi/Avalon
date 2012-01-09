@@ -24,6 +24,11 @@ var child_id = null;
     item_list[{{ child['id'] }}] = eval({{ child|tojson|safe }});
   {% endfor %}
 {% endif %}
+{% if not session.logged_in %}
+  var user_id = null;
+{% else %}
+  var user_id = {{ session.user_id }};
+{% endif %}
 
 var test = 'test';
 
@@ -125,18 +130,22 @@ function createNodeElement(item_id) {
 
 
   var node_title = $('<span />')
-      .addClass('node-title')
+      .addClass('node-title span7')
       //.append(vote_element('up'), votecount, title, vote_element('down'));
       .append(votecount, item.title);
 
   var body = $('<span />')
-      .addClass('node-body')
+      .addClass('node-body span7')
       .text(item.body);
+
+  var post_button = $('<button />')
+      .addClass('btn post-button')
+      .text('Reply');
 
   var node_element = $('<span />')
       .addClass('node')
       .attr('id', 'n_' + item.id)
-      .append(node_title, body);
+      .append(node_title, body, post_button);
 
   // node_element.getID = function() {
   //   getID();
@@ -159,7 +168,7 @@ function createChildElement(item_id, type) {
       .addClass('child-link')
       .attr('name', 'cl_' + item_id)
       .attr('href', '#')
-      //.attr('test', "displayChild(" + item.id + ", '" + type + "')")
+      .attr('onclick', "return false;")
       //.click(displayChild(item.id, 'child'))
       //.click(function(){displayChild(item.id, this)})
       .append(title);
@@ -188,6 +197,7 @@ function createChildElement(item_id, type) {
 
 /**
  * Renders either the child slide or the parent slide.
+ * Fetches an item and it's children from the server if the item isn't in the node_list
  */
 function renderSlide(type) { 
   var slide = $('#' + type + '-node');
@@ -255,6 +265,64 @@ function createInitalSlides() {
   slide_list = slide_list.concat(initial_slides);
   $('#slides-container').append(initial_slides[0], initial_slides[1]);
   return $('.node-slide');
+}
+
+/*
+ * creates the postdiv for a node
+ */
+function createPostDiv(type) {
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+
+  var inputDiv = function() {
+    return $('<div />').addClass('input');
+  }
+
+  var clearfix = function() {
+      return $('<div />').addClass('clearfix');
+    }
+
+  var title_label = $('<label />').text('Title:');
+  var title_input = $('<input />')
+      .addClass('span7')
+      .attr('type', 'text')
+      .attr('name', 'title');
+  title_input = inputDiv().append(title_input);
+  title_input = clearfix().append(title_label, title_input);
+
+  var body_label = $('<label />').text('Body:');
+  var body_input = $('<textarea />')
+      .addClass('span7')
+      .attr('name', 'body')
+      .attr('rows', 3);
+  body_input = inputDiv().append(body_input);
+  body_input = clearfix().append(body_label, body_input);
+
+  var parent_input = $('<input />')
+      .attr('type', 'hidden')
+      .attr('name', 'parent')
+      .val(slide_id);
+
+  var user_input = $('<input />')
+      .attr('type', 'hidden')
+      .attr('name', 'user_id')
+      .val(user_id);
+
+  var post_button = $('<input />')
+      .attr('type', 'submit')
+      .val('Submit Post');
+
+  var post_form = $('<form />')
+      .addClass('form-stacked')
+      .attr('method', 'post')
+      .attr('action', '{{ url_for('add_entry') }}')
+      .append(title_input, body_input, parent_input, user_input, post_button);
+  
+  var post_div = $('<span />')
+      .addClass('post-div')
+      .append(post_form);
+
+  slide.find('.node').append(post_div);
 }
 
 /**
@@ -341,6 +409,9 @@ $(document).ready(function() {
   slides = createInitalSlides();
   numberOfSlides = slides.length;
 
+  var child_node = $('#child-node');
+  var parent_node = $('#parent-node');
+
   // Remove scrollbar in JS
   $('.slides-container').css('overflow', 'hidden');
 
@@ -356,12 +427,8 @@ $(document).ready(function() {
   renderSlide('parent');
   var disp_id;
 
-  $('#parent-node').on("click", function() {
-    //alert('test');
-  });
-
   //display the clicked child node
-  $('#parent-node').on("click", '.child-link', function() {
+  parent_node.on("click", '.child-link', function() {
     disp_id = parseInt($(this).attr('name').split('_')[1], 10);
     if (disp_id === child_id) return;
     displayChild(disp_id, 'parent');
@@ -369,12 +436,26 @@ $(document).ready(function() {
     //$(this).parent().parent().addClass("child-highlight");
   });
 
-  $('#child-node').on("click", '.child-link', function() {
+  child_node.on("click", '.child-link', function() {
     disp_id = parseInt($(this).attr('name').split('_')[1], 10);
     if (disp_id === child_id) return;
     displayChild(disp_id, 'child');
-    //$('.child-highlight').removeClass('child-highlight');
-    //$(this).parent().parent().addClass("child-highlight");
+  });
+
+  child_node.on('click', '.post-button', function() {
+    if (child_node.find('.post-div').length === 0) {
+      createPostDiv('child');
+      return;
+    }
+    child_node.find('.post-div').slideToggle('fast');
+  });
+
+  parent_node.on('click', '.post-button', function() {
+    if (parent_node.find('.post-div').length === 0) {
+      createPostDiv('parent');
+      return;
+    }
+    parent_node.find('.post-div').slideToggle('fast');
   });
 
   //shift back one level
@@ -394,7 +475,6 @@ $(document).ready(function() {
     <div id="slides-container">
     </div>
   </div>
-  <!--
     <input id="toggleButton" type=button value="Add Item"><br />
     <div class="add-entry">
       <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
@@ -414,5 +494,5 @@ $(document).ready(function() {
         </dl>
       </form>
     </div>
-    -->
+
 {% endblock %}
