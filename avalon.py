@@ -82,12 +82,11 @@ def show_item(item_id, render = True):
         children.append(child)
         #dict(id=child['id'], title=child['title'], body=child['body'], user_id=child['user_id'], upvotes=chhild['upvotes'])
 
-    # if render: 
-    #     return render_template('page.html', item=item, children=children)
-    # else:
-    #     return item, children
+    if render:
+        return render_template('page.html', item=item, children=children)
+    else:
+        return item, children
 
-    return item, children
 
 
 def get_item(item_id):
@@ -98,23 +97,33 @@ def get_item(item_id):
         return render_template('page.html')
 
     children = []
-    for child in query_db('SELECT * FROM items WHERE id in (SELECT child FROM relations WHERE parent = ?) order by id desc', [item_id]):
-        children.append(child)
-    return item, children
+    children = query_db('SELECT * FROM items WHERE id in (SELECT child FROM relations WHERE parent = ?) order by id desc', [item_id])
+    # for child in query_db('SELECT * FROM items WHERE id in (SELECT child FROM relations WHERE parent = ?) order by id desc', [item_id]):
+    #     children.append(child)  ## I don't think I need these two lines... dk why i did it
+
+    user_ids = set([item['user_id'] for item in children + [item]])
+    user_id_string = '(' + ','.join([str(i) for i in user_ids]) + ')'
+    users = []
+    users = query_db('SELECT * FROM users WHERE id in ' + user_id_string)
+    #users = query_db('SELECT * FROM users WHERE id IN (' + ','.join(['?'] * len(user_ids)) + ')', user_ids)
+
+    return item, children, users
 
 
 @app.route('/')
 def index():
     # return show_item(0)
-    item, children = show_item(0)
-    return render_template('page.html', item=item, children=children, tab='browse-tab')
+    session['current_item'] = 0
+    item, children, users = get_item(0)
+    return render_template('page.html', item=item, children=children, users=users, tab='browse-tab')
 
 
 @app.route('/<int:item_id>')
 def item_page(item_id):
     # return show_item(item_id)
-    item, children = show_item(item_id)
-    return render_template('page.html', item=item, children=children, tab='browse-tab')
+    session['current_item'] = item_id
+    item, children, users = get_item(item_id)
+    return render_template('page.html', item=item, children=children, users=users, tab='browse-tab')
 
 
 @app.route('/add', methods=['POST'])
@@ -235,8 +244,8 @@ def vote():
 
 @app.route('/displayChild', methods=['POST'])
 def displayChild():
-    child, children = get_item(request.form['item_id'])
-    child_dict = {"child": child, "c_children": children, 'id': request.form['item_id']}
+    child, children, users = get_item(request.form['item_id'])
+    child_dict = {"child": child, "c_children": children, "users": users, 'id': request.form['item_id']}
     return jsonify(child_dict)
 
 

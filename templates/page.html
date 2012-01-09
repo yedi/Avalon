@@ -7,6 +7,8 @@ var node_list = {};
 var slide_list = [];
 var parent_id = null;
 var child_id = null;
+var user_list = {};
+
 {% if item %}
   node_list[{{ item['id'] }}] = {
     id: {{ item['id'] }},
@@ -23,10 +25,17 @@ var child_id = null;
     item_list[{{ child['id'] }}] = eval({{ child|tojson|safe }});
   {% endfor %}
 {% endif %}
+
 {% if not session.logged_in %}
   var user_id = null;
 {% else %}
   var user_id = {{ session.user_id }};
+{% endif %}
+
+{% if users %}
+  {% for user in users %}
+    user_list[{{ user['id'] }}] = eval({{ user|tojson|safe }});
+  {% endfor %}
 {% endif %}
 
 var test = 'test';
@@ -91,8 +100,6 @@ function vote(vote_type, item_id) {
   $.post(URL,{item_id: item_id, user_id: {{ session.user_id }}, vote_type: vote_type}, 
   function (data)
   {
-    //window.location.replace(" {{ url_for('item_page', item_id = session.current_item) }} ");
-    //$("#cr").html(data).show().fadeout(8000);
     updateVC(item_id, data.uv_c, data.dv_c);
   });
   return false;
@@ -141,10 +148,20 @@ function createNodeElement(item_id) {
       .addClass('btn post-button')
       .text('Reply');
 
+  var by_user = $('<a />')
+      .addClass('by-user')
+      .attr('href', '#')
+      .attr('onclick', 'return false')
+      .text(user_list[item.user_id].username);
+
+  var node_footer = $('<div />')
+      .addClass('node-footer span7')
+      .append(by_user, post_button);
+
   var node_element = $('<span />')
       .addClass('node')
       .attr('id', 'n_' + item.id)
-      .append(node_title, body, post_button);
+      .append(node_title, body, node_footer);
 
   // node_element.getID = function() {
   //   getID();
