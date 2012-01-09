@@ -409,8 +409,8 @@ $(document).ready(function() {
   slides = createInitalSlides();
   numberOfSlides = slides.length;
 
-  var child_node = $('#child-node');
-  var parent_node = $('#parent-node');
+  var doc = $(document);
+
 
   // Remove scrollbar in JS
   $('.slides-container').css('overflow', 'hidden');
@@ -426,36 +426,38 @@ $(document).ready(function() {
 
   renderSlide('parent');
   var disp_id;
+  var from;
 
   //display the clicked child node
-  parent_node.on("click", '.child-link', function() {
+  doc.on("click", '.child-link', function() {
+    if ($(this).parents('#parent-node').length === 0) {
+      from = 'child';
+    }
+    else {
+      from = 'parent';
+    }
+
     disp_id = parseInt($(this).attr('name').split('_')[1], 10);
     if (disp_id === child_id) return;
-    displayChild(disp_id, 'parent');
+    displayChild(disp_id, from);
     //$('.child-highlight').removeClass('child-highlight');
     //$(this).parent().parent().addClass("child-highlight");
   });
 
-  child_node.on("click", '.child-link', function() {
-    disp_id = parseInt($(this).attr('name').split('_')[1], 10);
-    if (disp_id === child_id) return;
-    displayChild(disp_id, 'child');
-  });
+  doc.on('click', '.post-button', function() {
+    if ($(this).parents('#parent-node').length === 0) {
+      from = 'child';
+    }
+    else {
+      from = 'parent';
+    }
+    var from_selector = $('#' + from + '-node');
 
-  child_node.on('click', '.post-button', function() {
-    if (child_node.find('.post-div').length === 0) {
-      createPostDiv('child');
+    if (from_selector.find('.post-div').length === 0) {
+      createPostDiv(from);
       return;
     }
-    child_node.find('.post-div').slideToggle('fast');
-  });
-
-  parent_node.on('click', '.post-button', function() {
-    if (parent_node.find('.post-div').length === 0) {
-      createPostDiv('parent');
-      return;
-    }
-    parent_node.find('.post-div').slideToggle('fast');
+    from_selector.find('.post-div').slideToggle('fast');
   });
 
   //shift back one level
