@@ -82,10 +82,12 @@ def show_item(item_id, render = True):
         children.append(child)
         #dict(id=child['id'], title=child['title'], body=child['body'], user_id=child['user_id'], upvotes=chhild['upvotes'])
 
-    if render: 
-        return render_template('page.html', item=item, children=children)
-    else:
-        return item, children
+    # if render: 
+    #     return render_template('page.html', item=item, children=children)
+    # else:
+    #     return item, children
+
+    return item, children
 
 
 def get_item(item_id):
@@ -103,13 +105,16 @@ def get_item(item_id):
 
 @app.route('/')
 def index():
-    return show_item(0)
-    #show_item(0)
+    # return show_item(0)
+    item, children = show_item(0)
+    return render_template('page.html', item=item, children=children, tab='browse-tab')
 
 
 @app.route('/<int:item_id>')
 def item_page(item_id):
-    return show_item(item_id)
+    # return show_item(item_id)
+    item, children = show_item(item_id)
+    return render_template('page.html', item=item, children=children, tab='browse-tab')
 
 
 @app.route('/add', methods=['POST'])
@@ -132,11 +137,11 @@ def register():
     error = None
     if request.method == 'POST':
         if request.form['password'] != request.form['password_rt']:
-            return render_template('register.html', error="Password doesn't match")
+            return render_template('register.html', error="Password doesn't match", tab='profile-tab')
 
         a_user = query_db('SELECT * FROM users WHERE username = ?', [request.form['username']], one=True)
         if a_user != None:
-            return render_template('register.html', error="Username already exists")
+            return render_template('register.html', error="Username already exists", tab='profile-tab')
 
         a_email = query_db('SELECT * FROM users where email = ?', [request.form['email']], one=True)
         if a_user != None:
@@ -154,7 +159,7 @@ def register():
 
         flash('You were now registered')
         return redirect(url_for('item_page', item_id=0))
-    return render_template('register.html', error=error)
+    return render_template('register.html', error=error, tab='profile-tab')
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -173,7 +178,7 @@ def login():
 
             flash('You were logged in')
             return redirect(url_for('item_page', item_id=session['current_item']))
-    return render_template('login.html', error=error)
+    return render_template('login.html', error=error, tab='profile-tab')
 
 
 @app.route('/logout')
@@ -233,6 +238,12 @@ def displayChild():
     child, children = get_item(request.form['item_id'])
     child_dict = {"child": child, "c_children": children, 'id': request.form['item_id']}
     return jsonify(child_dict)
+
+
+@app.route('/about')
+def aboutPage():
+    return render_template('about.html', tab='about-tab')
+
 
 if __name__ == '__main__':
     app.run()

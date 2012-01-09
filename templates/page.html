@@ -1,7 +1,6 @@
 {% extends "layout.html" %}
 {% block header %}
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='page.less') }}">
-<script type="text/javascript" src="{{ url_for('static', filename='jquery-1.7.js') }}"> </script>
 <script type="text/javascript" language="javascript">
 var item_list = {};
 var node_list = {};
@@ -372,6 +371,7 @@ function shiftSlides(shift_num) {
   currentPosition += shift_num;
   numberOfSlides += shift_num;
   updateNodes();
+  $('#slideInner').css('width', slideWidth * numberOfSlides + 1);
   $('#slideInner').animate({'marginLeft' : -20 + slideWidth*(-currentPosition)});
   return true;
 }
@@ -440,8 +440,6 @@ $(document).ready(function() {
     disp_id = parseInt($(this).attr('name').split('_')[1], 10);
     if (disp_id === child_id) return;
     displayChild(disp_id, from);
-    //$('.child-highlight').removeClass('child-highlight');
-    //$(this).parent().parent().addClass("child-highlight");
   });
 
   doc.on('click', '.post-button', function() {
@@ -471,11 +469,9 @@ $(document).ready(function() {
 </script>
 {% endblock %}
 {% block body %}
-  <div class="container">
-    <div id="back"><a href="#" onclick="return false;">Back</a></div>
-    <br />
-    <div id="slides-container">
-    </div>
+  <div id="back"><a href="#" onclick="return false;">Back</a></div>
+  <br />
+  <div id="slides-container">
   </div>
   <!--
     <input id="toggleButton" type=button value="Add Item"><br />
