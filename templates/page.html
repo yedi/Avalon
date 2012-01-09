@@ -13,6 +13,7 @@ var user_list = {};
   node_list[{{ item['id'] }}] = {
     id: {{ item['id'] }},
     children: [],
+    parents: [],
   };
   parent_id = {{ item['id'] }};
 
@@ -23,6 +24,13 @@ var user_list = {};
   {% for child in children %}
     node_list[parent_id].children.push({{ child['id'] }});
     item_list[{{ child['id'] }}] = eval({{ child|tojson|safe }});
+  {% endfor %}
+{% endif %}
+
+{% if parents %}
+  {% for parent in parents %}
+    node_list[parent_id].parents.push({{ parent['id'] }});
+    item_list[{{ parent['id'] }}] = eval({{ parent|tojson|safe }});
   {% endfor %}
 {% endif %}
 
@@ -153,9 +161,15 @@ function createNodeElement(item_id) {
       .attr('onclick', 'return false')
       .text(user_list[item.user_id].username);
 
+  var parents_btn = $('<a />')
+      .addClass('parents-btn')
+      .attr('href', '#')
+      .attr('onclick', 'return false')
+      .text("View parents")
+
   var node_footer = $('<div />')
       .addClass('node-footer span7')
-      .append(by_user, post_button);
+      .append(by_user, post_button, parents_btn);
 
   var node_element = $('<span />')
       .addClass('node')
@@ -227,6 +241,7 @@ function renderSlide(type) {
     {
       var item = data.child;
       var children = data.c_children;
+      var parents = data.c_parents;
       var users = data.users;
       
       //adds the new item to the item list, 
@@ -234,7 +249,8 @@ function renderSlide(type) {
       item_list[item.id] = item;
       node_list[item.id] = {
         id: item.id,
-        children: new Array(),
+        children: [],
+        parents: [],
       };
 
       //adds the children each to the item list, 
@@ -243,6 +259,14 @@ function renderSlide(type) {
         item_list[children[i].id] = children[i];
         node_list[item.id].children.push(children[i].id);
       };
+
+      //adds the parents each to the item list, 
+      //updates the new item's node object with the list of it's children
+      for (var i = 0; i < parents.length; i++) {
+        item_list[parents[i].id] = parents[i];
+        node_list[item.id].parents.push(parents[i].id);
+      };
+
 
       //adds the users each to the user list, 
       for (var i = 0; i < users.length; i++) {
@@ -344,6 +368,42 @@ function createPostDiv(type) {
       .append(post_form);
 
   slide.find('.node').append(post_div);
+}
+
+/*
+ * creates the parents div for a node
+ */
+function createParentsDiv(type) {
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+
+  var parent = function(item_id) {
+    var parent_link = $('<a />')
+        .attr('href', '/' + item_id)
+        //.attr('onclick', 'return false;')
+        .addClass('parent-link')
+        .text(item_list[item_id].title);
+
+    return parent_link;
+  }
+
+  slide_parents = node_list[slide_id].parents;
+
+  var parent_links = [];
+  for (var i = 0; i < slide_parents.length && i < 5; i++) {
+    parent_links.push(parent(slide_parents[i]));
+  }
+
+  var parents_div = $('<div />')
+      .addClass('parents-div')
+      .text('Parents: ')
+      //.append(parent_links);
+
+  for (var i = 0; i < slide_parents.length && i < 5; i++) {
+    parents_div.append(parent(slide_parents[i]), " ");
+  }
+
+  slide.find('.node').append(parents_div);
 }
 
 /**
@@ -478,6 +538,22 @@ $(document).ready(function() {
       return;
     }
     from_selector.find('.post-div').slideToggle('fast');
+  });
+
+  doc.on('click', '.parents-btn', function() {
+    if ($(this).parents('#parent-node').length === 0) {
+      from = 'child';
+    }
+    else {
+      from = 'parent';
+    }
+    var from_selector = $('#' + from + '-node');
+
+    if (from_selector.find('.parents-div').length === 0) {
+      createParentsDiv(from);
+      return;
+    }
+    from_selector.find('.parents-div').slideToggle('fast');
   });
 
   //shift back one level

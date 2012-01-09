@@ -101,29 +101,32 @@ def get_item(item_id):
     # for child in query_db('SELECT * FROM items WHERE id in (SELECT child FROM relations WHERE parent = ?) order by id desc', [item_id]):
     #     children.append(child)  ## I don't think I need these two lines... dk why i did it
 
+    parents = []
+    parents = query_db('SELECT * FROM items WHERE id in (SELECT parent FROM relations WHERE child = ?) order by id desc', [item_id])
+
     user_ids = set([item['user_id'] for item in children + [item]])
     user_id_string = '(' + ','.join([str(i) for i in user_ids]) + ')'
     users = []
     users = query_db('SELECT * FROM users WHERE id in ' + user_id_string)
     #users = query_db('SELECT * FROM users WHERE id IN (' + ','.join(['?'] * len(user_ids)) + ')', user_ids)
 
-    return item, children, users
+    return item, children, parents, users
 
 
 @app.route('/')
 def index():
     # return show_item(0)
     session['current_item'] = 0
-    item, children, users = get_item(0)
-    return render_template('page.html', item=item, children=children, users=users, tab='browse-tab')
+    item, children, parents, users = get_item(0)
+    return render_template('page.html', item=item, children=children, parents=parents, users=users, tab='browse-tab')
 
 
 @app.route('/<int:item_id>')
 def item_page(item_id):
     # return show_item(item_id)
     session['current_item'] = item_id
-    item, children, users = get_item(item_id)
-    return render_template('page.html', item=item, children=children, users=users, tab='browse-tab')
+    item, children, parents, users = get_item(item_id)
+    return render_template('page.html', item=item, children=children, parents=parents, users=users, tab='browse-tab')
 
 
 @app.route('/add', methods=['POST'])
@@ -244,8 +247,12 @@ def vote():
 
 @app.route('/displayChild', methods=['POST'])
 def displayChild():
-    child, children, users = get_item(request.form['item_id'])
-    child_dict = {"child": child, "c_children": children, "users": users, 'id': request.form['item_id']}
+    child, children, parents, users = get_item(request.form['item_id'])
+    child_dict = {  "child": child,
+                    "c_children": children,
+                    "c_parents": parents,
+                    "users": users,
+                    'id': request.form['item_id']}
     return jsonify(child_dict)
 
 
