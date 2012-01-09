@@ -134,7 +134,6 @@ function createNodeElement(item_id) {
     .addClass('node-vc')
     .append(vote_element('up'), vote_element('down'), vc_num);
 
-
   var node_title = $('<span />')
       .addClass('node-title span7')
       //.append(vote_element('up'), votecount, title, vote_element('down'));
@@ -228,6 +227,7 @@ function renderSlide(type) {
     {
       var item = data.child;
       var children = data.c_children;
+      var users = data.users;
       
       //adds the new item to the item list, 
       //creates a node object for the new item and stores it in the node list
@@ -242,6 +242,11 @@ function renderSlide(type) {
       for (var i = 0; i < children.length; i++) {
         item_list[children[i].id] = children[i];
         node_list[item.id].children.push(children[i].id);
+      };
+
+      //adds the users each to the user list, 
+      for (var i = 0; i < users.length; i++) {
+        user_list[users[i].id] = users[i];
       };
 
       //rerender the slide to overwrite 'Loading...'
