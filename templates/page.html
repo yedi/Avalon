@@ -173,8 +173,8 @@ function createChildElement(item_id, type) {
       //.click(function(){displayChild(item.id, this)})
       .append(title);
 
-  var body = $('<span />')
-      .addClass('child-body')
+  var body = $('<div />')
+      .addClass('child-body span7')
       .text(item.body);
 
   var votecount = $('<span />')
@@ -475,6 +475,7 @@ $(document).ready(function() {
     <div id="slides-container">
     </div>
   </div>
+  <!--
     <input id="toggleButton" type=button value="Add Item"><br />
     <div class="add-entry">
       <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
@@ -494,5 +495,5 @@ $(document).ready(function() {
         </dl>
       </form>
     </div>
-
+  -->
 {% endblock %}
