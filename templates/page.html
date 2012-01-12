@@ -109,6 +109,7 @@ function vote(vote_type, rel_id) {
 function createNodeElement(rel_id) {
   var rel = rel_list[rel_id];
   var item = item_list[rel.child];
+  //var node = node_list[rel_id];
 
   //returns the element for the up/down vote icon
   var vote_element = function (type) {
@@ -161,9 +162,21 @@ function createNodeElement(rel_id) {
       .attr('onclick', 'return false')
       .text("View parents")
 
+  var linked_by = $('<span />');
+  if (rel.linked_by !== null) {
+    var lb_link = $('<a />')
+        .attr('href', '#')
+        .attr('onclick', 'return false')
+        .text(user_list[rel.linked_by].username)
+
+    linked_by
+        .text('Linked by ')
+        .append(lb_link);
+  }
+
   var node_footer = $('<div />')
       .addClass('node-footer span7')
-      .append(by_user, post_button, parents_btn);
+      .append(by_user, linked_by, post_button, parents_btn);
 
   var node_element = $('<span />')
       .addClass('node')
@@ -463,6 +476,7 @@ function displayChild(rel_id, from) {
   root_node_info.rel = {
     id: 'root',
     child: root_node_info.item.id,
+    linked_by: null,
   };
   addNodeInfo(root_node_info);
 {% endif %}
