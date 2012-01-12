@@ -47,47 +47,6 @@ def query_db(query, args=(), one=False):
     return (rv[0] if rv else None) if one else rv
 
 
-def show_item(item_id, render = True):
-    if not isinstance(item_id, (int, long)):
-        item_id = 0
-    """
-    Item and the children of the parent it just came from in one column
-        The body of the item.
-        The number of parents the item has. (if it has any)
-            Allow the user to view the ideas the item was reposted for.
-            Good because the users can see how widespread this solution/idea is.
-    The children of the selected item in a column to the right of it
-    """
-    session['current_item'] = item_id
-    fields = ('id', 'title', 'body', 'user_id', 'upvotes', 'downvotes')
-    flash('item id is {0}'.format(item_id))
-    #item
-    #cur = g.db.execute('SELECT id, title, body, user_id, upvotes, downvotes FROM items WHERE id={0} order by id desc'.format(item_id))
-    #item = [dict(id=row[0] title=row[1], body=row[2] user_id=row[3] upvotes=row[4] downvotes=row[5]) for row in cur.fetchall()]
-
-    item = query_db('SELECT * FROM items WHERE id = ?', [item_id], one=True)
-    if item is None:
-        flash('No such item')
-        return render_template('page.html')
-
-    #children
-    #cur = g.db.execute('SELECT id, title, body, user_id, upvotes, downvotes FROM items WHERE id in (SELECT child FROM tags WHERE parent = {0}) order by id desc'.format(item_id))
-    #children = [dict(id=row[0] title=row[1], body=row[2] user_id=row[3] upvotes=row[4] downvotes=row[5]) for row in cur.fetchall()]
-
-    children = []
-    #children = None;
-
-    for child in query_db('SELECT * FROM items WHERE id in (SELECT child FROM relations WHERE parent = ?) order by id desc', [item_id]):
-        #print user['username'], 'has the id', user['user_id']
-        children.append(child)
-        #dict(id=child['id'], title=child['title'], body=child['body'], user_id=child['user_id'], upvotes=chhild['upvotes'])
-
-    if render:
-        return render_template('page.html', item=item, children=children)
-    else:
-        return item, children
-
-
 def getRel(rel_id=None, parent_id=None, child_id=None):
     rel = None
 
@@ -167,6 +126,18 @@ def getUser(user_id):
     user = query_db('SELECT * FROM users WHERE id = ?', [user_id], one=True)
     return user
 
+
+def getTag(tag_name=None, tag_id=None):
+    if tag_name is not None:
+        tag = query_db('SELECT * FROM tags WHERE name = ?', [tag_name], one=True)
+        return tag
+    elif tag_id is not None:
+        tag = query_db('SELECT * FROM tags WHERE id = ?', [tag_id], one=True)
+        return tag
+    else:
+        return None
+
+
 @app.route('/')
 def index():
     session['current_item'] = 0
@@ -196,20 +167,39 @@ def item_page(item_id):
 
 @app.route('/add', methods=['POST'])
 def add_entry():
+    if len(request.form['title']) < 1:
+        flash('Please give a title to your post.')
+        return redirect(url_for('item_page', item_id=session['current_item']))
+
+    if getUser(request.form['user_id']) is None:
+        flash('You must have a valid user account to post')
+        return redirect(url_for('item_page', item_id=session['current_item']))
+
     cur = g.db.cursor()
 
+    #insert item into item table
     cur.execute('insert into items (title, body, user_id, time_submitted) values (?, ?, ?, ?)',
                  [request.form['title'], request.form['body'], request.form['user_id'], datetime.now()])
     new_item_id = cur.lastrowid
 
+    #insert the relation into the relations tables
     parent_id = request.form['parent']
-
     cur.execute('insert into relations (parent, child) values(?, ?)',
                  [parent_id, new_item_id])
     new_rel_id = cur.lastrowid
 
+    # insert each tag into the tag table if the tag is valid
+    tags = request.form['tags']
+    if len(tags) > 0:
+        for tag_name in tags.split():
+            tag = getTag(tag_name)
+            if tag is None:
+                continue
+            cur.execute('insert into tag_relations (item, tag) values (?, ?)', [new_item_id, tag['id']])
+
     g.db.commit()
 
+    #automatically upvote for the user
     process_vote(new_rel_id, request.form['user_id'], 'up')
 
     flash('New entry was successfully posted')

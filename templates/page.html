@@ -276,6 +276,14 @@ function createPostDiv(type) {
   body_input = inputDiv().append(body_input);
   body_input = clearfix().append(body_label, body_input);
 
+  var tags_label = $('<label />').text('Tags:');
+  var tags_input = $('<input />')
+      .addClass('span7')
+      .attr('type', 'text')
+      .attr('name', 'tags');
+  tags_input = inputDiv().append(tags_input);
+  tags_input = clearfix().append(tags_label, tags_input);
+
   var parent_input = $('<input />')
       .attr('type', 'hidden')
       .attr('name', 'parent')
@@ -294,7 +302,7 @@ function createPostDiv(type) {
       .addClass('form-stacked')
       .attr('method', 'post')
       .attr('action', '{{ url_for('add_entry') }}')
-      .append(title_input, body_input, parent_input, user_input, post_button);
+      .append(title_input, body_input, tags_input, parent_input, user_input, post_button);
 
   var item_label = $('<label />').text("Linked item's id:");
   var item_input = $('<input />')
@@ -467,8 +475,6 @@ function displayChild(rel_id, from) {
   highlightChild();
   return false;
 }
-
-
 
 //inital values
 {% if nd %}

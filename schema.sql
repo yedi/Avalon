@@ -32,6 +32,13 @@ create table tags (
   name string not null
 );
 
+insert into tags (name) values ("comment");
+insert into tags (name) values ("idea");
+insert into tags (name) values ("question");
+insert into tags (name) values ("solution");
+insert into tags (name) values ("info");
+insert into tags (name) values ("poll");
+
 drop table if exists tag_relations;
 create table tag_relations (
   item integer not null,
