@@ -282,10 +282,28 @@ function createPostDiv(type) {
       .attr('method', 'post')
       .attr('action', '{{ url_for('add_entry') }}')
       .append(title_input, body_input, parent_input, user_input, post_button);
-  
-  var post_div = $('<span />')
+
+  var item_label = $('<label />').text("Linked item's id:");
+  var item_input = $('<input />')
+      .addClass('span7')
+      .attr('type', 'number')
+      .attr('name', 'item');
+  item_input = inputDiv().append(item_input);
+  item_input = clearfix().append(item_label, item_input);
+
+  var link_button = $('<input />')
+      .attr('type', 'submit')
+      .val('Submit Link');
+
+  var link_form = $('<form />')
+      .addClass('form-stacked')
+      .attr('method', 'post')
+      .attr('action', '{{ url_for('addLink') }}')
+      .append(item_input, parent_input.clone(), user_input.clone(), link_button);
+
+    var post_div = $('<span />')
       .addClass('post-div')
-      .append(post_form);
+      .append(post_form, link_form);
 
   slide.find('.node').append(post_div);
 }

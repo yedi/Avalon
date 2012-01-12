@@ -100,7 +100,12 @@ def getRel(rel_id=None, parent_id=None, child_id=None):
     return rel
 
 
-def getItem(item_id, given_needs={}):
+def getItem(item_id):
+    item = query_db('SELECT * FROM items WHERE id = ?', [item_id], one=True)
+    return item
+
+
+def getItemInfo(item_id, given_needs={}):
     """
     """
     needs = {
@@ -116,7 +121,7 @@ def getItem(item_id, given_needs={}):
     parent_ids = child_ids = parent_items = child_items = parent_rels = child_rels = users = []
     user_ids = set()
 
-    item = query_db('SELECT * FROM items WHERE id = ?', [item_id], one=True)
+    item = getItem(item_id)
     if item is None:
         #return {"error": 'No such item'}
         return None
@@ -171,7 +176,7 @@ def index():
         "child_items": True,
         "child_rels": True
     }
-    node_dict = getItem(0, need)
+    node_dict = getItemInfo(0, need)
     return render_template('page.html', nd=node_dict, tab='browse-tab')
 
 
@@ -184,7 +189,7 @@ def item_page(item_id):
         "child_items": True,
         "child_rels": True
     }
-    node_dict = getItem(item_id, need)
+    node_dict = getItemInfo(item_id, need)
     #lol = breakme
     return render_template('page.html', nd=node_dict, tab='browse-tab')
 
@@ -208,6 +213,25 @@ def add_entry():
     process_vote(new_rel_id, request.form['user_id'], 'up')
 
     flash('New entry was successfully posted')
+
+    return redirect(url_for('item_page', item_id=parent_id))
+
+
+@app.route('/addLink', methods=['POST'])
+def addLink():
+    item_id, parent_id, user_id = request.form['item'], request.form['parent'], request.form['user_id']
+    if (not getItem(item_id)) | (not getItem(parent_id)) | (not getUser(user_id)):
+        return "Link error"
+
+    cur = g.db.cursor()
+    cur.execute('insert into relations (parent, child, linked_by, time_linked) values (?, ?, ?, ?)',
+                 [parent_id, item_id, user_id, datetime.now()])
+    new_rel_id = cur.lastrowid
+    g.db.commit()
+
+    process_vote(new_rel_id, user_id, 'up')
+
+    flash('Item (' + str(item_id) + ') was successfully linked')
 
     return redirect(url_for('item_page', item_id=parent_id))
 
@@ -315,12 +339,6 @@ def vote():
     return jsonify(uv_c=uv_c, dv_c=dv_c)
 
 
-@app.route('/grabRel/<int:rel_id>')
-def trythis(rel_id):
-    rel = getRel(rel_id=rel_id)
-    lol = ll
-
-
 @app.route('/grabRel', methods=['POST'])
 def grabRel():
     rel_id = int(request.form['rel_id'])
@@ -336,7 +354,7 @@ def grabRel():
         "child_rels": True
     }
     rel['child']
-    child_dict = getItem(rel['child'], need)
+    child_dict = getItemInfo(rel['child'], need)
     child_dict['rel'] = rel
     return jsonify(child_dict)
 
@@ -350,7 +368,7 @@ def grabItem():
         "child_rels": True
     }
 
-    item_dict = getItem(request.form['item_id'], need)
+    item_dict = getItemInfo(request.form['item_id'], need)
     return jsonify(item_dict)
 
 
