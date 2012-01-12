@@ -3,67 +3,25 @@
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='page.less') }}">
 <script type="text/javascript" language="javascript">
 var item_list = {};
+var rel_list = {};
 var node_list = {};
 var slide_list = [];
-var parent_id = null;
-var child_id = null;
 var user_list = {};
+var parent_id = 'root';
+var child_id = null;
 
-{% if item %}
-  node_list[{{ item['id'] }}] = {
-    id: {{ item['id'] }},
-    children: [],
-    parents: [],
-  };
-  parent_id = {{ item['id'] }};
-
-  item_list[{{ item['id'] }}] = eval({{ item|tojson|safe }});
-{% endif %}
-
-{% if children %}
-  {% for child in children %}
-    node_list[parent_id].children.push({{ child['id'] }});
-    item_list[{{ child['id'] }}] = eval({{ child|tojson|safe }});
-  {% endfor %}
-{% endif %}
-
-{% if parents %}
-  {% for parent in parents %}
-    node_list[parent_id].parents.push({{ parent['id'] }});
-    item_list[{{ parent['id'] }}] = eval({{ parent|tojson|safe }});
-  {% endfor %}
-{% endif %}
-
-{% if not session.logged_in %}
-  var user_id = null;
-{% else %}
-  var user_id = {{ session.user_id }};
-{% endif %}
-
-{% if users %}
-  {% for user in users %}
-    user_list[{{ user['id'] }}] = eval({{ user|tojson|safe }});
-  {% endfor %}
-{% endif %}
-
-var test = 'test';
-
-// variable for manipulating slides
+// variables for manipulating slides
 var currentPosition = 0;
 var slideWidth = 480;
 var slides;
 var numberOfSlides;
 var lastSlide = 941;
 
-
-/**
- * Adds multiple item objects to the 
- * How can I make it so that this function can take in any amount of parameters?
- * Also, make it so that the function gracefully handles both arrays of items and singular items
- * @todo write the function
- */
-function addToItemList() {
-}
+{% if not session.logged_in %}
+  var user_id = null;
+{% else %}
+  var user_id = {{ session.user_id }};
+{% endif %}
 
 /**
  * checks to see if node is in node_list 
@@ -80,47 +38,77 @@ function inNodeList(node_id) {
   return ret;
 }
 
+/*
+ * adds the given node info the data on this client
+ */
+function addNodeInfo(ni) {
+  node_list[ni.rel.id] = {
+    id: ni.rel.id,
+    child_rel_ids: [],
+    parent_ids: [],
+  };
+
+  item_list[ni.item.id] = ni.item
+  for (var i = 0; i < ni.parent_items.length; i++) {
+    item_list[ni.parent_items[i].id] = ni.parent_items[i];
+    node_list[ni.rel.id].parent_ids.push(ni.parent_items[i].id);
+  }
+  for (var i = 0; i < ni.child_items.length; i++) {
+    item_list[ni.child_items[i].id] = ni.child_items[i];
+  }
+
+  rel_list[ni.rel.id] = ni.rel;
+  for (var i = 0; i < ni.child_rels.length; i++) {
+    rel_list[ni.child_rels[i].id] = ni.child_rels[i];
+    node_list[ni.rel.id].child_rel_ids.push(ni.child_rels[i].id)
+  }
+
+  for (var i = 0; i < ni.users.length; i++) {
+    user_list[ni.users[i].id] = ni.users[i];
+  };
+}
+
 /**
  * gets the ID from an node html element 
  */
 function getIdOf(node) {
   var n_id = node.find('.node').attr('id');
-  return parseInt(n_id.split('_')[1], 10);
+  n_id = n_id.split('_')[1];
+  if (n_id === 'root') return n_id;
+  return parseInt(n_id, 10);
 }
 
 /**
- * changes the votecount of the given item everywhere the item is stored
+ * changes the votecount of the given relation everywhere the relation is stored
  */
-function updateVC(item_id, uv_c, dv_c) {
-  item_list[item_id].upvotes += uv_c;
-  item_list[item_id].downvotes += dv_c;
-  var new_vc = item_list[item_id].upvotes - item_list[item_id].downvotes;
-  $('#n_' + item_id + ' .vc-num').text(new_vc);
-  $('#c_' + item_id + ' .child-vc').text(new_vc);
+function updateVC(rel_id, uv_c, dv_c) {
+  rel_list[rel_id].upvotes += uv_c;
+  rel_list[rel_id].downvotes += dv_c;
+  var new_vc = rel_list[rel_id].upvotes - rel_list[rel_id].downvotes;
+  $('#n_' + rel_id + ' .vc-num').text(new_vc);
+  $('#c_' + rel_id + ' .child-vc').text(new_vc);
 }
 
 /**
  * Handles voting functionality. Sends vote action to the server and refreshes page
  * @todo Change so that it doesn't refresh page and just updates the vote count on the current page
  */
-function vote(vote_type, item_id) {
+function vote(vote_type, rel_id) {
   var URL = "{{ url_for('vote') }}";
-  $.post(URL,{item_id: item_id, user_id: {{ session.user_id }}, vote_type: vote_type}, 
+  $.post(URL,{rel_id: rel_id, user_id: user_id, vote_type: vote_type}, 
   function (data)
   {
-    updateVC(item_id, data.uv_c, data.dv_c);
+    updateVC(rel_id, data.uv_c, data.dv_c);
   });
   return false;
 }
 
 /**
- * Creates a node dom element from the given item id
+ * Creates a node dom element from the given rel id
  */
-function createNodeElement(item_id) {
-  var item = item_list[item_id];
-
-  var title = $('<span />')
-      .text(item.id + " | " + item.title);
+function createNodeElement(rel_id) {
+  var rel = rel_list[rel_id];
+  var item = item_list[rel.child];
 
   //returns the element for the up/down vote icon
   var vote_element = function (type) {
@@ -128,19 +116,25 @@ function createNodeElement(item_id) {
     var ele = $('<a />')
         .addClass('nv-' + type)
         .attr('href', '#')
-        .attr('onclick', "vote('" + type + "', " + item.id + ")")
-        //.click(vote(type, item.id))
+        .attr('onclick', "vote('" + type + "', " + rel.id + ")")
+        //.click(vote(type, rel.id))
         .text(icon);
     return ele;
   }
 
-  var vc_num = $('<span />')
-    .addClass('vc-num')
-    .text(item.upvotes - item.downvotes);
+  if (rel.id === 'root') {
+    var votecount = $('<span />');
+  }
 
-  var votecount = $('<span />')
-    .addClass('node-vc')
-    .append(vote_element('up'), vote_element('down'), vc_num);
+  else {
+    var vc_num = $('<span />')
+        .addClass('vc-num')
+        .text(rel.upvotes - rel.downvotes);
+
+    var votecount = $('<span />')
+        .addClass('node-vc')
+        .append(vote_element('up'), vote_element('down'), vc_num);
+  }
 
   var node_title = $('<span />')
       .addClass('node-title span7')
@@ -173,21 +167,18 @@ function createNodeElement(item_id) {
 
   var node_element = $('<span />')
       .addClass('node')
-      .attr('id', 'n_' + item.id)
+      .attr('id', 'n_' + rel.id)
       .append(node_title, body, node_footer);
-
-  // node_element.getID = function() {
-  //   getID();
-  // };
 
   return node_element;
 }
 
 /**
- * Creates a child dom element from the given item id
+ * Creates a child dom element from the given rel id
  */
-function createChildElement(item_id, type) {
-  var item = item_list[item_id];
+function createChildElement(rel_id, type) {
+  var rel = rel_list[rel_id];
+  var item = item_list[rel.child];
 
   var title = $('<span />')
       .addClass('child-title')
@@ -195,11 +186,11 @@ function createChildElement(item_id, type) {
 
   var title_link = $('<a />')
       .addClass('child-link')
-      .attr('name', 'cl_' + item_id)
+      .attr('name', 'cl_' + rel_id)
       .attr('href', '#')
       .attr('onclick', "return false;")
-      //.click(displayChild(item.id, 'child'))
-      //.click(function(){displayChild(item.id, this)})
+      //.click(displayChild(rel.id, 'child'))
+      //.click(function(){displayChild(rel.id, this)})
       .append(title);
 
   var body = $('<div />')
@@ -208,7 +199,7 @@ function createChildElement(item_id, type) {
 
   var votecount = $('<span />')
       .addClass('child-vc')
-      .text(item.upvotes - item.downvotes);
+      .text(rel.upvotes - rel.downvotes);
 
   var title_body = $('<span />')
       //.css({"display": "block", "float": "left"})
@@ -217,83 +208,11 @@ function createChildElement(item_id, type) {
 
   var child_element = $('<li />')
       .addClass('child')
-      .attr('id', 'c_' + item.id)
-      //.text(item.upvotes - item.downvotes)
+      .attr('id', 'c_' + rel.id)
+      //.text(rel.upvotes - rel.downvotes)
       .append(votecount, title_body);
 
   return child_element;
-}
-
-/**
- * Renders either the child slide or the parent slide.
- * Fetches an item and it's children from the server if the item isn't in the node_list
- */
-function renderSlide(type) { 
-  var slide = $('#' + type + '-node');
-  var slide_id = (type === 'parent')?parent_id:child_id;
-
-  //if node information isn't store locally, get the info from server
-  if (!(inNodeList(slide_id))) {
-    slide.html('Loading...');
-    var URL = "{{ url_for('displayChild') }}";
-    $.post(URL, {item_id: slide_id}, 
-    function (data)
-    {
-      var item = data.child;
-      var children = data.c_children;
-      var parents = data.c_parents;
-      var users = data.users;
-      
-      //adds the new item to the item list, 
-      //creates a node object for the new item and stores it in the node list
-      item_list[item.id] = item;
-      node_list[item.id] = {
-        id: item.id,
-        children: [],
-        parents: [],
-      };
-
-      //adds the children each to the item list, 
-      //updates the new item's node object with the list of it's children
-      for (var i = 0; i < children.length; i++) {
-        item_list[children[i].id] = children[i];
-        node_list[item.id].children.push(children[i].id);
-      };
-
-      //adds the parents each to the item list, 
-      //updates the new item's node object with the list of it's children
-      for (var i = 0; i < parents.length; i++) {
-        item_list[parents[i].id] = parents[i];
-        node_list[item.id].parents.push(parents[i].id);
-      };
-
-
-      //adds the users each to the user list, 
-      for (var i = 0; i < users.length; i++) {
-        user_list[users[i].id] = users[i];
-      };
-
-      //rerender the slide to overwrite 'Loading...'
-      renderSlide(type);
-    });
-
-    return;    
-  }
-
-  var node = node_list[slide_id];
-
-  var children_list = $('<ul />');
-  for (var i = 0; i < node.children.length; i++) {
-    children_list.append(createChildElement(node.children[i], type));
-  };
-
-  var children = $('<span />')
-      .addClass('children')
-      .append($('<h2 />').text('Children'), children_list);
-
-  slide
-    .empty()
-    .append(createNodeElement(node.id), children);
 }
 
 /*
@@ -318,6 +237,7 @@ function createInitalSlides() {
 function createPostDiv(type) {
   var slide = $('#' + type + '-node');
   var slide_id = (type === 'parent')?parent_id:child_id;
+  var item_id = rel_list[slide_id].child;
 
   var inputDiv = function() {
     return $('<div />').addClass('input');
@@ -346,7 +266,7 @@ function createPostDiv(type) {
   var parent_input = $('<input />')
       .attr('type', 'hidden')
       .attr('name', 'parent')
-      .val(slide_id);
+      .val(item_id);
 
   var user_input = $('<input />')
       .attr('type', 'hidden')
@@ -387,7 +307,7 @@ function createParentsDiv(type) {
     return parent_link;
   }
 
-  slide_parents = node_list[slide_id].parents;
+  slide_parents = node_list[slide_id].parent_ids;
 
   var parent_links = [];
   for (var i = 0; i < slide_parents.length && i < 5; i++) {
@@ -407,6 +327,45 @@ function createParentsDiv(type) {
 }
 
 /**
+ * Renders either the child slide or the parent slide.
+ * Fetches an item and it's children from the server if the item isn't in the node_list
+ */
+function renderSlide(type) { 
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+
+  //if node information isn't store locally, get the info from server
+  if (!(inNodeList(slide_id))) {
+    slide.html('Loading...');
+    var URL = "{{ url_for('grabRel') }}";
+    $.post(URL, {rel_id: slide_id}, 
+    function (data)
+    {
+      addNodeInfo(data);
+      //rerender the slide to overwrite 'Loading...'
+      renderSlide(type);
+    });
+
+    return;    
+  }
+
+  var node = node_list[slide_id];
+
+  var children_list = $('<ul />');
+  for (var i = 0; i < node.child_rel_ids.length; i++) {
+    children_list.append(createChildElement(node.child_rel_ids[i], type));
+  };
+
+  var children = $('<span />')
+      .addClass('children')
+      .append($('<h2 />').text('Children'), children_list);
+
+  slide
+    .empty()
+    .append(createNodeElement(node.id), children);
+}
+
+/**
  * Changes the parent node and child node to the nodes at the current position
  */
 function updateNodes() {
@@ -414,15 +373,6 @@ function updateNodes() {
   $('#child-node').removeAttr('id');
   slide_list[currentPosition].attr('id', 'parent-node');
   slide_list[currentPosition + 1].attr('id', 'child-node');
-}
-
-/*
- * Highlights the child list element of the current child
- */
-function highlightChild() {
-  if (!child_id) return;
-  $('.child-highlight').removeClass('child-highlight');
-  $("#c_" + child_id).addClass("child-highlight");
 }
 
 /**
@@ -458,18 +408,27 @@ function shiftSlides(shift_num) {
   return true;
 }
 
+/*
+ * Highlights the child list element of the current child
+ */
+function highlightChild() {
+  if (!child_id) return;
+  $('.child-highlight').removeClass('child-highlight');
+  $("#c_" + child_id).addClass("child-highlight");
+}
+
 /**
  * Display the selected child and updates the child and parent ids
  */
-function displayChild(item_id, from) {
+function displayChild(rel_id, from) {
   if (from === 'parent') {
-    child_id = item_id;
+    child_id = rel_id;
     renderSlide('child');
   }
   else {
     shiftSlides(1);
     parent_id = child_id;
-    child_id = item_id;
+    child_id = rel_id;
     //renderSlide('parent');
     $('#parent-node').html(slide_list[currentPosition].html());
     renderSlide('child');
@@ -478,16 +437,21 @@ function displayChild(item_id, from) {
   return false;
 }
 
+
+
+//inital values
+{% if nd %}
+  var root_node_info = eval({{ nd|tojson|safe }});
+  root_node_info.rel = {
+    id: 'root',
+    child: root_node_info.item.id,
+  };
+  addNodeInfo(root_node_info);
+{% endif %}
 </script>
 <script type="text/javascript" language="javascript">
 //DOCUMENT READY ==============================================================
 $(document).ready(function() {
-  //toggle
-  $(".add-entry").hide();
-  $("#toggleButton").click(function() {
-    $(".add-entry").slideToggle(500);
-  });
-
   slides = createInitalSlides();
   numberOfSlides = slides.length;
 
@@ -571,25 +535,4 @@ $(document).ready(function() {
   <br />
   <div id="slides-container">
   </div>
-  <!--
-    <input id="toggleButton" type=button value="Add Item"><br />
-    <div class="add-entry">
-      <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
-        <dl>
-          <dt>Title:
-          <dd><input type="text" size=30 name=title>
-          <dt>Body:
-          <dd><textarea name="body" rows=5 cols=40></textarea>
-          <input type="hidden" name="parent" value={{ item['id'] }} >
-          <input type="hidden" name="user_id" 
-          {% if not session.logged_in %}
-            value=0>
-          {% else %}
-            value="{{ session.user_id }}">
-          {% endif %}
-          <dd><input type="submit" value="Add Item">
-        </dl>
-      </form>
-    </div>
-  -->
 {% endblock %}

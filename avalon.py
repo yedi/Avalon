@@ -88,59 +88,127 @@ def show_item(item_id, render = True):
         return item, children
 
 
+def getRel(rel_id=None, parent_id=None, child_id=None):
+    rel = None
 
-def get_item(item_id):
-    fields = ('id', 'title', 'body', 'user_id', 'upvotes', 'downvotes')
+    if isinstance(rel_id, (int, long)):
+        rel = query_db('SELECT * FROM relations WHERE id = ?', [rel_id], one=True)
+
+    elif isinstance(parent_id, (int, long)) & isinstance(child_id, (int, long)):
+        rel = query_db('SELECT * FROM relations WHERE parent = ? AND child = ?', [parent_id, child_id], one=True)
+
+    return rel
+
+
+def getItem(item_id, given_needs={}):
+    """
+    """
+    needs = {
+        "parent_items": False,
+        "child_items": False,
+        "parent_rels": False,
+        "child_rels": False,
+        'users': False
+    }
+
+    needs.update(given_needs)
+
+    parent_ids = child_ids = parent_items = child_items = parent_rels = child_rels = users = []
+    user_ids = set()
+
     item = query_db('SELECT * FROM items WHERE id = ?', [item_id], one=True)
     if item is None:
-        flash('No such item')
-        return render_template('page.html')
+        #return {"error": 'No such item'}
+        return None
 
-    children = []
-    children = query_db('SELECT * FROM items WHERE id in (SELECT child FROM relations WHERE parent = ?) order by id desc', [item_id])
-    # for child in query_db('SELECT * FROM items WHERE id in (SELECT child FROM relations WHERE parent = ?) order by id desc', [item_id]):
-    #     children.append(child)  ## I don't think I need these two lines... dk why i did it
+    if needs["parent_items"] | needs["parent_rels"]:
+        parent_rels = query_db('SELECT * FROM relations WHERE child = ?', [item_id])
 
-    parents = []
-    parents = query_db('SELECT * FROM items WHERE id in (SELECT parent FROM relations WHERE child = ?) order by id desc', [item_id])
+    if needs["parent_items"]:
+        parent_ids = set([rel['parent'] for rel in parent_rels])
+        parent_id_string = '(' + ','.join([str(i) for i in parent_ids]) + ')'
+        parent_items = query_db('SELECT * FROM items WHERE id in ' + parent_id_string)
 
-    user_ids = set([item['user_id'] for item in children + [item]])
-    user_id_string = '(' + ','.join([str(i) for i in user_ids]) + ')'
-    users = []
-    users = query_db('SELECT * FROM users WHERE id in ' + user_id_string)
-    #users = query_db('SELECT * FROM users WHERE id IN (' + ','.join(['?'] * len(user_ids)) + ')', user_ids)
+    if needs["child_items"] | needs["child_rels"]:
+        child_rels = query_db('SELECT * FROM relations WHERE parent = ?', [item_id])
 
-    return item, children, parents, users
+    if needs["child_items"]:
+        child_ids = set([rel['child'] for rel in child_rels])
+        child_id_string = '(' + ','.join([str(i) for i in child_ids]) + ')'
+        child_items = query_db('SELECT * FROM items WHERE id in ' + child_id_string)
 
+    if needs["users"]:
+        #get the user_ids for any linked relations
+        for rel in parent_rels + child_rels:
+            if rel["linked_by"]:
+                user_ids.add(rel["linked_by"])
+
+        user_ids.update(set([item['user_id'] for item in parent_items + child_items + [item]]))
+        user_id_string = '(' + ','.join([str(i) for i in user_ids]) + ')'
+        users = query_db('SELECT * FROM users WHERE id in ' + user_id_string)
+
+    ret_dict = {
+        "item": item,
+        "parent_items": parent_items,
+        "child_items": child_items,
+        "parent_rels": parent_rels,
+        "child_rels": child_rels,
+        "users": users
+    }
+    return ret_dict
+
+
+def getUser(user_id):
+    user = query_db('SELECT * FROM users WHERE id = ?', [user_id], one=True)
+    return user
 
 @app.route('/')
 def index():
-    # return show_item(0)
     session['current_item'] = 0
-    item, children, parents, users = get_item(0)
-    return render_template('page.html', item=item, children=children, parents=parents, users=users, tab='browse-tab')
+    need = {
+        "users": True,
+        "parent_items": True,
+        "child_items": True,
+        "child_rels": True
+    }
+    node_dict = getItem(0, need)
+    return render_template('page.html', nd=node_dict, tab='browse-tab')
 
 
 @app.route('/<int:item_id>')
 def item_page(item_id):
-    # return show_item(item_id)
     session['current_item'] = item_id
-    item, children, parents, users = get_item(item_id)
-    return render_template('page.html', item=item, children=children, parents=parents, users=users, tab='browse-tab')
+    need = {
+        "users": True,
+        "parent_items": True,
+        "child_items": True,
+        "child_rels": True
+    }
+    node_dict = getItem(item_id, need)
+    #lol = breakme
+    return render_template('page.html', nd=node_dict, tab='browse-tab')
 
 
 @app.route('/add', methods=['POST'])
 def add_entry():
     cur = g.db.cursor()
+
     cur.execute('insert into items (title, body, user_id, time_submitted) values (?, ?, ?, ?)',
                  [request.form['title'], request.form['body'], request.form['user_id'], datetime.now()])
-    insert_id = cur.lastrowid
+    new_item_id = cur.lastrowid
+
     parent_id = request.form['parent']
+
     cur.execute('insert into relations (parent, child) values(?, ?)',
-                 [parent_id, insert_id])
+                 [parent_id, new_item_id])
+    new_rel_id = cur.lastrowid
+
     g.db.commit()
-    process_vote(insert_id, request.form['user_id'], 'up')
+
+    process_vote(new_rel_id, request.form['user_id'], 'up')
+
     flash('New entry was successfully posted')
+
     return redirect(url_for('item_page', item_id=parent_id))
 
 
@@ -200,7 +268,9 @@ def logout():
     return redirect(url_for('item_page', item_id=0))
 
 
-def process_vote(item_id, user_id, vote_type):
+def process_vote(rel_id, user_id, vote_type):
+    if not getUser(user_id):
+        return
     if vote_type == 'up':
         is_upvote = True
     else:
@@ -208,31 +278,31 @@ def process_vote(item_id, user_id, vote_type):
 
     upvote_count, downvote_count = 0, 0
 
-    a_vote = query_db('SELECT * FROM votes WHERE item_id = ? AND user_id = ?', [item_id, user_id], one=True)
+    a_vote = query_db('SELECT * FROM votes WHERE rel_id = ? AND user_id = ?', [rel_id, user_id], one=True)
     if a_vote is None:
-        query_db('INSERT INTO votes (item_id, user_id, vote_type) VALUES (?, ?, ?)', [item_id, user_id, vote_type])
+        query_db('INSERT INTO votes (rel_id, user_id, vote_type) VALUES (?, ?, ?)', [rel_id, user_id, vote_type])
         if is_upvote:
             upvote_count = 1
         else:
             downvote_count = 1
     else:
         if a_vote['vote_type'] == vote_type:
-            query_db('DELETE FROM votes WHERE item_id = ? AND user_id = ?', [item_id, user_id])
+            query_db('DELETE FROM votes WHERE rel_id = ? AND user_id = ?', [rel_id, user_id])
             if is_upvote:
                 upvote_count = -1
             else:
                 downvote_count = -1
         else:
-            query_db('UPDATE votes SET vote_type = ? WHERE item_id = ? AND user_id = ?', [vote_type, item_id, user_id])
+            query_db('UPDATE votes SET vote_type = ? WHERE rel_id = ? AND user_id = ?', [vote_type, rel_id, user_id])
             if is_upvote:
                 upvote_count, downvote_count = 1, -1
             else:
                 downvote_count, upvote_count = 1, -1
 
-    #query_db('UPDATE items SET ? = ?+1 WHERE id=?', [column, column, item_id])
-    #query_db('UPDATE items SET {0} = {0}+1 WHERE id={1}'.format(column, item_id))
-    query_db('UPDATE items SET upvotes = upvotes+?, downvotes = downvotes+? WHERE id=?',
-            [upvote_count, downvote_count, item_id])
+    #query_db('UPDATE relations SET ? = ?+1 WHERE id=?', [column, column, rel_id])
+    #query_db('UPDATE relations SET {0} = {0}+1 WHERE id={1}'.format(column, rel_id))
+    query_db('UPDATE relations SET upvotes = upvotes+?, downvotes = downvotes+? WHERE id=?',
+            [upvote_count, downvote_count, rel_id])
 
     g.db.commit()
     return upvote_count, downvote_count
@@ -240,20 +310,48 @@ def process_vote(item_id, user_id, vote_type):
 
 @app.route('/vote', methods=['POST'])
 def vote():
-    uv_c, dv_c = process_vote(request.form['item_id'], request.form['user_id'], request.form['vote_type'])
+    uv_c, dv_c = process_vote(request.form['rel_id'], request.form['user_id'], request.form['vote_type'])
     # return redirect(url_for('item_page', item_id=session['current_item']))
     return jsonify(uv_c=uv_c, dv_c=dv_c)
 
 
-@app.route('/displayChild', methods=['POST'])
-def displayChild():
-    child, children, parents, users = get_item(request.form['item_id'])
-    child_dict = {  "child": child,
-                    "c_children": children,
-                    "c_parents": parents,
-                    "users": users,
-                    'id': request.form['item_id']}
+@app.route('/grabRel/<int:rel_id>')
+def trythis(rel_id):
+    rel = getRel(rel_id=rel_id)
+    lol = ll
+
+
+@app.route('/grabRel', methods=['POST'])
+def grabRel():
+    rel_id = int(request.form['rel_id'])
+    #parent_id = request.form['parent_id']
+    #child_id = request.form['child_id']
+
+    rel = getRel(rel_id=rel_id)
+
+    need = {
+        "users": True,
+        "parent_items": True,
+        "child_items": True,
+        "child_rels": True
+    }
+    rel['child']
+    child_dict = getItem(rel['child'], need)
+    child_dict['rel'] = rel
     return jsonify(child_dict)
+
+
+@app.route('/grabItem', methods=['POST'])
+def grabItem():
+    need = {
+        "users": True,
+        "parent_items": True,
+        "child_items": True,
+        "child_rels": True
+    }
+
+    item_dict = getItem(request.form['item_id'], need)
+    return jsonify(item_dict)
 
 
 @app.route('/about')
