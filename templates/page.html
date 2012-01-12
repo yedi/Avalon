@@ -146,6 +146,10 @@ function createNodeElement(rel_id) {
       .addClass('node-body span7')
       .text(item.body);
 
+  var tags_div = $('<span />')
+      .addClass('tags span7')
+      .text("Tags: " + item.tags.join(', '));
+
   var post_button = $('<button />')
       .addClass('btn post-button')
       .text('Reply');
@@ -181,7 +185,7 @@ function createNodeElement(rel_id) {
   var node_element = $('<span />')
       .addClass('node')
       .attr('id', 'n_' + rel.id)
-      .append(node_title, body, node_footer);
+      .append(node_title, body, tags_div, node_footer);
 
   return node_element;
 }

@@ -81,6 +81,7 @@ def getItemInfo(item_id, given_needs={}):
     user_ids = set()
 
     item = getItem(item_id)
+    item['tags'] = getItemTags(item['id'], True)
     if item is None:
         #return {"error": 'No such item'}
         return None
@@ -92,6 +93,8 @@ def getItemInfo(item_id, given_needs={}):
         parent_ids = set([rel['parent'] for rel in parent_rels])
         parent_id_string = '(' + ','.join([str(i) for i in parent_ids]) + ')'
         parent_items = query_db('SELECT * FROM items WHERE id in ' + parent_id_string)
+        for it in parent_items:
+            it['tags'] = getItemTags(it['id'], True)
 
     if needs["child_items"] | needs["child_rels"]:
         child_rels = query_db('SELECT * FROM relations WHERE parent = ?', [item_id])
@@ -100,6 +103,8 @@ def getItemInfo(item_id, given_needs={}):
         child_ids = set([rel['child'] for rel in child_rels])
         child_id_string = '(' + ','.join([str(i) for i in child_ids]) + ')'
         child_items = query_db('SELECT * FROM items WHERE id in ' + child_id_string)
+        for it in child_items:
+            it['tags'] = getItemTags(it['id'], True)
 
     if needs["users"]:
         #get the user_ids for any linked relations
@@ -136,6 +141,13 @@ def getTag(tag_name=None, tag_id=None):
         return tag
     else:
         return None
+
+
+def getItemTags(item_id, name_only=False):
+    tags = query_db('SELECT * FROM tags where id in (SELECT tag FROM tag_relations where item = ?)', [item_id])
+    if name_only:
+        return [tag['name'] for tag in tags]
+    return tags
 
 
 @app.route('/')
