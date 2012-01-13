@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block header %}
+<script type="text/javascript" src="{{ url_for('static', filename='jquery-1.7.js') }}"> </script>
+<script type="text/javascript" language="javascript">
+function vote (vote_type, item_id)
+{
+  var URL = "{{ url_for('vote') }}";
+  $.post(URL,{item_id: item_id, user_id: {{ session.user_id }}, vote_type: vote_type}, 
+  function (data)
+  {
+    window.location.replace(" {{ url_for('item_page', item_id = session.current_item) }} ");
+    //$("#cr").html(data).show().fadeout(8000);
+  });
+  return false;
+}
+</script>
+<script type="text/javascript" language="javascript">
+//DOCUMENT READY ==============================================================
+$(document).ready(function() {
+  //toggle
+  $(".add-entry").hide();
+  $("#toggleButton").click(function() {
+    $(".add-entry").slideToggle(500);
+  });
+});
+</script>
+{% endblock %}
+{% block body %}
+  <input id="toggleButton" type=button value="Add Item"><br />
+  <div class="add-entry">
+    <form action="{{ url_for('add_entry') }}" method=post class=add-entry>
+      <dl>
+        <dt>Title:
+        <dd><input type="text" size=30 name=title>
+        <dt>Body:
+        <dd><textarea name="body" rows=5 cols=40></textarea>
+        <input type="hidden" name="parent" value={{ item['id'] }} >
+        <input type="hidden" name="user_id" 
+        {% if not session.logged_in %}
+          value=0>
+        {% else %}
+          value="{{ session.user_id }}">
+        {% endif %}
+        <dd><input type="submit" value="Add Item">
+      </dl>
+    </form>
+  </div>
+  {% if item %}
+    <div class="item-title"> {{ item['title'] }} </div>
+    <div class="item-body"> {{ item['body'] }} </div>
+  {% else %}
+    <h1>No item to display</h1>
+  {% endif %}
+  <br />
+  <span class="children">
+    <h2> Children: </h2>
+    <ul>
+    {% if children %}
+      {% for page in children %}
+        <li>
+          <a href="{{ url_for('item_page', item_id = page['id']) }}"><h3>{{ page['title'] }}</h3></a>
+          <span class="child-body">{{ page['body']|safe }}</span>
+          <span class="voting">
+            {{ page['upvotes'] - page ['downvotes'] }} votes | 
+            <a href="#" onclick="vote('up', {{ page['id'] }})">Up</a> - 
+            <a href="#" onclick="vote('down', {{ page['id'] }})">Down</a>
+          </span>
+        </li>
+      {% else %}
+        <li><em>No posts here</em></li>
+      {% endfor %}
+    {% endif %}
+    </ul>
+  </span>
+{% endblock %}

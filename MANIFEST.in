@@ -1,0 +1,2 @@
+recursive-include avalon/templates *
+recursive-include avalon/static *
