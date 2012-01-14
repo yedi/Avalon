@@ -1,4 +1,4 @@
-@bodybg: #EEE;
+@bodybg: #FFF;
 @lh: 1.5;
 
 body {
@@ -7,8 +7,53 @@ body {
 	line-height: @lh;
 }
 
+.rounded-corners (@radius: 8px) {
+  border-radius: @radius;
+  -webkit-border-radius: @radius;
+  -moz-border-radius: @radius;
+  -khtml-border-radius: @radius;
+}
+
 .container {
-	background: white;
+	
+}
+
+#right-links {
+	.topbar;
+	font-size: 85%;
+	float: right;
+	margin-top: 10px;
+	a {
+		padding:10px;
+	}
+}
+
+.header {
+	background-color: #EEE;
+	width: 100%;
+	margin: auto;
+	border-bottom: 1px solid #CCC;
+	a {
+		&:hover {
+			text-decoration: none;
+		}
+	}
+	ul {
+		float: right;
+		margin-right: 150px;
+	}
+	li {
+		.rounded-corners(5px);
+		color: #222;
+		float: left;
+		padding: 10px;
+		margin-top: 10px;
+		&:hover {
+			background: #CCC;
+			border: 1px black;
+		}
+	}
+
 }
 
 .item {
@@ -31,27 +76,26 @@ body {
 }
 
 .topbar() {
-	padding: 0 15px;
+	/*padding: 0 15px;*/
 	position: relative;
 	line-height: 34px;
 }
 
 #home-text {
+	color: #222;
 	font-size: 32px;
 	font-weight: bold;
-	font-family: 'Georgia', serif; 
-	margin: 0;
+	font-family: 'Georgia', sans-serif; 
+	margin-top: 10px;
+	margin-bottom: 10px;
+	margin-right: 0px;
+	margin-left: 0px;
+
 	.topbar;
-	padding-right: 80px;
 	float: left;
 	clear: left;
 
 	&:hover { 
       	text-decoration: none;
     }
-}
-
-#right-links {
-	.topbar;
-	float: right;
 }
