@@ -37,7 +37,7 @@
 }
 
 .node-title {
-  font-size: 32px;
+  font-size: 150%;
   line-height: 2;
   display: block;
 }
@@ -49,7 +49,7 @@
 .node-body {
   @color: #83a4c0;
   margin-left: 40px;
-
+  font-size: 80%;
   margin-bottom: 5px;
   .rounded-corners(4px);
   background: lighten(@color, 30%);
@@ -99,6 +99,10 @@
 .child {
   .group;
   display: block;
+  padding: 10px 0 5px  0;
+  margin: 10px 0 5px 0;
+
+
 }
 
 .child-title {
@@ -108,6 +112,7 @@
 
 
 .child-body {
+  font-size: 70%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
