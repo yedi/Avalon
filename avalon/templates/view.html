@@ -243,6 +243,7 @@ $(document).ready(function() {
       item_list[data.item.id] = data.item;
       data.rel.head_item = item.id;
       rel_list[data.rel.id] = data.rel;
+      user_list[data.user.id] = data.user;
 
       if (data.rel.parent === item.id) {
         $('#comments').prepend(createCommentElement(data.rel.id)).show('fast');
