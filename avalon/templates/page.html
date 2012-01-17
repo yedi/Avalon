@@ -117,7 +117,7 @@ function createNodeElement(rel_id) {
     var ele = $('<a />')
         .addClass('nv-' + type)
         .attr('href', '#')
-        .attr('onclick', "vote('" + type + "', " + rel.id + ")")
+        .attr('onclick', "return vote('" + type + "', " + rel.id + ")")
         //.click(vote(type, rel.id))
         .text(icon);
     return ele;
@@ -262,7 +262,7 @@ function createPostDiv(type) {
 
   var clearfix = function() {
       return $('<div />').addClass('clearfix');
-    }
+  }
 
   var title_label = $('<label />').text('Title:');
   var title_input = $('<input />')

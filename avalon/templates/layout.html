@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <title>Avalon</title>
-<link rel="stylesheet/less" type="text/css" href="static/bootstrap/lib/bootstrap.less">
+<link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='bootstrap') }}/lib/bootstrap.less">
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='avalon.less') }}">
 <script type="text/javascript" src="{{ url_for('static', filename='jquery-1.7.js') }}"> </script>
 <script type="text/javascript" language="javascript">
-$(document).ready(function() {
-  $('#{{ tab }}').addClass('active');
-});
+// $(document).ready(function() {
+//   $('#{{ tab }}').addClass('active');
+// });
 </script>
 {% block header %}{% endblock %}
 <script type="text/javascript" src="{{ url_for('static', filename='less-1.1.5.min.js') }}"></script>

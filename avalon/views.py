@@ -51,9 +51,17 @@ def getRel(rel_id=None, parent_id=None, child_id=None):
     return rel
 
 
-def getItem(item_id):
-    item = query_db('SELECT * FROM items WHERE id = ?', [item_id], one=True)
-    return item
+def getItems(item_ids):
+    item_ids = set(item_ids)
+    item_id_string = '(' + ','.join([str(i) for i in item_ids]) + ')'
+    items = query_db('SELECT * FROM items WHERE id in ' + item_id_string)
+    return items
+
+
+def isComment(rel_id):
+    if query_db('SELECT * FROM comments WHERE rel_id = ?', [rel_id], one=True) is None:
+        return False
+    return True
 
 
 def getItemInfo(item_id, given_needs={}):
@@ -64,7 +72,8 @@ def getItemInfo(item_id, given_needs={}):
         "child_items": False,
         "parent_rels": False,
         "child_rels": False,
-        'users': False
+        'users': False,
+        "comments": False
     }
 
     needs.update(given_needs)
@@ -72,7 +81,7 @@ def getItemInfo(item_id, given_needs={}):
     parent_ids = child_ids = parent_items = child_items = parent_rels = child_rels = users = []
     user_ids = set()
 
-    item = getItem(item_id)
+    item = getItems([item_id])[0]
     item['tags'] = getItemTags(item['id'], True)
     if item is None:
         #return {"error": 'No such item'}
@@ -90,6 +99,9 @@ def getItemInfo(item_id, given_needs={}):
 
     if needs["child_items"] | needs["child_rels"]:
         child_rels = query_db('SELECT * FROM relations WHERE parent = ?', [item_id])
+
+    if needs["comments"] == False:
+        child_rels[:] = [rel for rel in child_rels if not isComment(rel['id'])]
 
     if needs["child_items"]:
         child_ids = set([rel['child'] for rel in child_rels])
@@ -117,6 +129,17 @@ def getItemInfo(item_id, given_needs={}):
         "users": users
     }
     return ret_dict
+
+
+def getComments(item_id):
+    comments = query_db('SELECT * FROM comments WHERE head_item = ?', [item_id])
+    comment_rels = set([c['rel_id'] for c in comments])
+    comment_rel_string = '(' + ','.join([str(i) for i in comment_rels]) + ')'
+    comment_rels = query_db('SELECT * FROM relations WHERE id in ' + comment_rel_string)
+
+    for comment in comments:
+        comment.update(next(cr for cr in comment_rels if cr['id'] == comment['rel_id']))
+    return comments
 
 
 def getUser(user_id):
@@ -175,6 +198,10 @@ def add_entry():
         flash('Please give a title to your post.')
         return redirect(url_for('item_page', item_id=session['current_item']))
 
+    # if session['user_id'] != request.form['user_id']:
+    #     flash('There is an issue with the session. Please login again')
+    #     return redirect(url_for('item_page', item_id=session['current_item']))
+
     if getUser(request.form['user_id']) is None:
         flash('You must have a valid user account to post')
         return redirect(url_for('item_page', item_id=session['current_item']))
@@ -214,7 +241,7 @@ def add_entry():
 @app.route('/addLink', methods=['POST'])
 def addLink():
     item_id, parent_id, user_id = request.form['item'], request.form['parent'], request.form['user_id']
-    if (not getItem(item_id)) | (not getItem(parent_id)) | (not getUser(user_id)):
+    if (not getItems([item_id])[0]) | (not getItems([parent_id])[0]) | (not getUser(user_id)):
         return "Link error"
 
     cur = g.db.cursor()
@@ -364,6 +391,68 @@ def grabItem():
 
     item_dict = getItemInfo(request.form['item_id'], need)
     return jsonify(item_dict)
+
+
+@app.route('/view/<int:item_id>')
+def viewItem(item_id):
+    session['current_item'] = item_id
+    need = {
+        "users": True,
+        "parent_items": True,
+        "child_items": True,
+        "child_rels": True
+    }
+    item_info = getItemInfo(item_id, need)
+    item_info['comment_rels'] = getComments(item_id)
+
+    item_info['comment_items'] = getItems([rel['child'] for rel in item_info['comment_rels']])
+
+    user_ids = set([it['user_id'] for it in item_info['comment_items']])
+    item_info['users'].extend([getUser(uid) for uid in user_ids])
+
+    return render_template('view.html', ii=item_info, tab='view-tab')
+
+
+@app.route('/postComment', methods=['POST'])
+def postComment():
+    # if session['user_id'] != request.form['user_id']:
+    #     return 'There is an issue with the session. Please login again.--' + str(session['user_id']) + '|' + str(request.form['user_id']) + "/n" + str(type(session['user_id'])) + '|' + str(type(request.form['user_id']))
+
+    if getUser(request.form['user_id']) is None:
+        return'You must have a valid user account to post'
+
+    cur = g.db.cursor()
+
+    #insert item into item table
+    cur.execute('insert into items (title, body, user_id, time_submitted) values (?, ?, ?, ?)',
+                 ["", request.form['body'], request.form['user_id'], datetime.now()])
+    new_item_id = cur.lastrowid
+
+    #insert the relation into the relations tables
+    parent_id = request.form['parent']
+    cur.execute('insert into relations (parent, child) values(?, ?)',
+                 [parent_id, new_item_id])
+    new_rel_id = cur.lastrowid
+
+    # insert comment tag
+    comment_tag = getTag('comment')
+    cur.execute('insert into tag_relations (item, tag) values (?, ?)', [new_item_id, comment_tag['id']])
+
+    # insert comment relation in db
+    cur.execute('insert into comments (head_item, rel_id) values (?, ?)', [request.form['head_item'], new_rel_id])
+
+    g.db.commit()
+
+    #automatically upvote for the user
+    process_vote(new_rel_id, request.form['user_id'], 'up')
+
+    ret_dict = {
+        "item": getItems([new_item_id])[0],
+        "rel": getRel(new_rel_id),
+        "user": getUser(request.form['user_id'])
+    }
+
+    return jsonify(ret_dict)
 
 
 @app.route('/about')

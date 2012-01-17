@@ -1,0 +1,277 @@
+{% extends "layout.html" %}
+{% block header %}
+<link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='view.less') }}">
+<script type="text/javascript" language="javascript">
+var item_list = {};
+var rel_list = {};
+var user_list = {};
+
+var inputDiv = function() {
+  return $('<div />').addClass('input');
+}
+
+var clearfix = function() {
+  return $('<div />').addClass('clearfix');
+}
+
+/**
+ * changes the votecount of the given relation everywhere the relation is stored
+ */
+function updateVC(rel_id, uv_c, dv_c) {
+  rel_list[rel_id].upvotes += uv_c;
+  rel_list[rel_id].downvotes += dv_c;
+  var new_vc = rel_list[rel_id].upvotes - rel_list[rel_id].downvotes;
+  $('#vcn-' + rel_id).text(new_vc);
+}
+
+/**
+ * Handles voting functionality. Sends vote action to the server and refreshes page
+ * @todo Change so that it doesn't refresh page and just updates the vote count on the current page
+ */
+function vote(vote_type, rel_id) {
+  var URL = "{{ url_for('vote') }}";
+  $.post(URL,{rel_id: rel_id, user_id: {{session.user_id}}, vote_type: vote_type}, 
+  function (data)
+  {
+    updateVC(rel_id, data.uv_c, data.dv_c);
+  });
+  return false;
+}
+
+/*
+ * Create the form in which you can post a comment
+ */
+function createReplyForm(item_id) {
+  var body_input = $('<textarea />')
+      .addClass('xxlarge reply-body')
+      .attr('name', 'body')
+      .attr('rows', 3);
+  body_input = inputDiv().append(body_input);
+  body_input = clearfix().append(body_input);
+
+  var save_button = $('<button />')
+      .addClass('btn save-button')
+      .text('save');
+
+  var reply_form = $('<div />') 
+      .addClass('reply-form')
+      .attr('id', 'rt-' + item_id)
+      .append(body_input, save_button);
+
+  if (item_id !== item.id) {
+    var cancel_button = $('<button />')
+        .addClass('btn cancel-button')
+        .text('cancel');
+    reply_form.append(cancel_button);
+  }
+  return reply_form;
+}
+
+/*
+ * Creates the dom element for each comment
+ */
+function createCommentElement(rel_id) {
+  var rel = rel_list[rel_id];
+  var c_item = item_list[rel.child];
+  var user = user_list[c_item.user_id]
+
+  //returns the element for the up/down vote icon
+  var vote_element = function (type) {
+    var icon = (type === 'up')?'+':'-';
+    var ele = $('<a />')
+        .addClass('nv-' + type)
+        .attr('href', '#')
+        .attr('onclick', "return vote('" + type + "', " + rel.id + ")")
+        //.click(vote(type, rel.id))
+        .text(icon);
+    return ele;
+  }
+
+  var vc_num = $('<span />')
+        .addClass('vc-num')
+        .attr('id', 'vcn-' + rel_id)
+        .text(rel.upvotes - rel.downvotes);
+
+  var votediv = $('<div />')
+      .addClass('comment-vote')
+      //.append(vote_element('up'), vote_element('down'), vc_num);
+      .append(vote_element('up'), vote_element('down'));
+
+  var user_link = $('<a />')
+      .addClass('comment-user')
+      .text(user.username);
+
+  var votecount = $('<span />')
+      .addClass('comment-vc')
+      .append(vc_num, ' vote(s)')
+
+  var top = $('<span />')
+      .append(user_link, votecount)
+
+  var body = $('<span />')
+      .addClass('comment-body')
+      .append(c_item.body);
+
+  var reply = $('<a />')
+      .addClass('reply-link')
+      .attr('id', 'rl-' + c_item.id)
+      .attr('href', "#")
+      .attr('onclick', 'return false;')
+      .text('reply');
+  
+  var comment_info = $('<span/>')
+      .addClass('comment-info')
+      .append(top, '<br />', body, '<br />', reply);
+
+  var comment_div = $('<div />')
+      .addClass('comment')
+      .attr('id', 'cr-' + rel_id)
+      .append(votediv, comment_info);
+    
+  return comment_div;
+}
+
+/*
+ * 
+ */
+function getChildComments(item_id) {
+  var comments = [];
+  for (var i = 0; i < comment_rels.length; i++) {
+    if (comment_rels[i].parent === item_id) {
+      comments.push(comment_rels[i]);
+    }
+  }
+
+  return comments;
+}
+
+/*
+ * 
+ */
+function createChildComments(item_id, recursive) {
+  if (arguments.length < 2){
+    recursive = false;
+  }
+
+  var comment_elements = [];
+
+  var comments = getChildComments(item_id);
+  if (0 == comments.length) {
+    return comment_elements;
+  }
+
+  for (var i = 0; i < comments.length; i++) {
+    var comment_ele = createCommentElement(comments[i].id);
+
+    if (recursive) {
+      var cc_eles = createChildComments(comments[i].id, recursive);
+      var cc_div = $('<span />')
+          .addClass('nested-comments')
+          .attr('id', 'ncd-' + comments[i].id);
+
+      for (var j = 0; j < cc_eles.length; j++) {
+        cc_div.append(cc_eles[j])
+      }
+      comment_ele.append(cc_div);
+    }
+
+    comment_elements.push(comment_ele);
+  }
+
+  return comment_elements;
+}
+
+{% if ii %}
+  var item_info = eval({{ ii|tojson|safe }});
+  var item = item_info.item;
+  var comment_rels = item_info.comment_rels;
+  var comment_items = item_info.comment_items;
+  var users = item_info.users;
+
+  item_list[item.id] = item;
+  for (var i = 0; i < comment_items.length; i++) {
+    item_list[comment_items[i].id] = comment_items[i];
+  }
+
+  for (var i = 0; i < comment_rels.length; i++) {
+    rel_list[comment_rels[i].id] = comment_rels[i];
+  }
+
+  for (var i = 0; i < users.length; i++) {
+    user_list[users[i].id] = users[i];
+  };
+{% endif %}
+
+
+</script>
+<script type="text/javascript" language="javascript">
+$(document).ready(function() {
+  var doc = $(document);
+  $('#reply-to-item').append(createReplyForm(item.id));
+
+  var main_comments = createChildComments(item.id, true);
+  for (var i = 0; i < main_comments.length; i++){
+    $('#comments').append(main_comments[i]);
+  }
+
+  doc.on('click', '.reply-link', function () {
+    parent_ele = $(this).parents('.comment-info');
+
+    if (parent_ele.find('.reply-form').length === 0) {
+      var reply_id = parseInt($(this).attr('id').split('-')[1], 10)
+      var rf = createReplyForm(reply_id);
+      parent_ele.append(rf).show('fast');
+      return;
+    }
+
+    parent_ele.find('.reply-form').show('fast')
+  });
+
+  doc.on('click', '.cancel-button', function () {
+    $(this).parent('.reply-form').hide('fast');
+  });
+
+  doc.on('click', '.save-button', function() {
+    var reply_div = $(this).parent();
+    var reply_body = reply_div.find('textarea').val();
+    var reply_to = parseInt(reply_div.attr('id').split('-')[1], 10);
+
+    var URL = "{{ url_for('postComment') }}";
+    $.post(URL, {head_item: item.id, parent: reply_to, body: reply_body, user_id: {{session.user_id}} }, 
+    function (data)
+    {
+      item_list[data.item.id] = data.item;
+      data.rel.head_item = item.id;
+      rel_list[data.rel.id] = data.rel;
+
+      if (data.rel.parent === item.id) {
+        $('#comments').prepend(createCommentElement(data.rel.id)).show('fast');
+      }
+      $('#ncd-' + data.rel.parent).prepend(createCommentElement(data.rel.id)).show('fast');
+    });
+    reply_div.remove();
+  });
+});
+</script>
+{% endblock %}
+{% block body %}
+  <h2>View Page</h2>
+
+  <div id="item-info">
+    <div id="item-title">
+      {{ ii['item']['title'] }}
+    </div>
+    <div id="item-body">
+      {{ ii['item']['body'] }}
+    </div>
+    <br />
+    All <span style="font-weight:bold;">{{ ii['comment_rels']|length }}</span> comments
+  </div>
+  <br />
+  <div id="reply-to-item">
+  Commenting as: <span style="font-weight: bold;">{{ session.username }}
+  </div>
+  <br />
+  <div id="comments">
+  </div>
+{% endblock %}

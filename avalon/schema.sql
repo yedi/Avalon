@@ -39,6 +39,14 @@ insert into tags (name) values ("solution");
 insert into tags (name) values ("info");
 insert into tags (name) values ("poll");
 
+drop table if exists comments;
+create table comments (
+  head_item integer not null,
+  rel_id integer not null,
+  foreign key(head_item) references item(id),
+  foreign key(rel_id) references relations(id)
+);
+
 drop table if exists tag_relations;
 create table tag_relations (
   item integer not null,
