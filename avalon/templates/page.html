@@ -206,8 +206,8 @@ function createChildElement(rel_id, type) {
   var rel = rel_list[rel_id];
   var item = item_list[rel.child];
 
-  var title = $('<span />')
-      .addClass('child-title')
+  var title = $('<div />')
+      .addClass('child-title span7')
       .text(item.title);
 
   var title_link = $('<a />')
