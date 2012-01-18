@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
 {% block header %}
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='page.less') }}">
+<script type="text/javascript" src="{{ url_for('static', filename='bootstrap') }}/js/bootstrap-tabs.js"></script>
 <script type="text/javascript" language="javascript">
 var item_list = {};
 var rel_list = {};
@@ -111,6 +112,11 @@ function createNodeElement(rel_id) {
   var item = item_list[rel.child];
   //var node = node_list[rel_id];
 
+  if (item.id === 0) {
+    item.title = 'Welcome to Avalon';
+    item.body = "Avalon is a place for collaborating with each other to solve our world's problems. Browse through the discussion and feel free to contribute."
+  }
+
   //returns the element for the up/down vote icon
   var vote_element = function (type) {
     var icon = (type === 'up')?'+':'-';
@@ -124,7 +130,10 @@ function createNodeElement(rel_id) {
   }
 
   if (rel.id === 'root') {
-    var votecount = $('<span />');
+    var votecount = $('<span />')
+        .css('visibility', 'hidden')
+        .addClass('node-vc')
+        .append("__");
   }
 
   else {
@@ -293,21 +302,19 @@ function createPostDiv(type) {
       .attr('name', 'parent')
       .val(item_id);
 
-  var user_input = $('<input />')
-      .attr('type', 'hidden')
-      .attr('name', 'user_id')
-      .val(user_id);
+  // var post_button = $('<input />')
+  //     .attr('type', 'submit')
+  //     .val('Submit Post');
 
-  var post_button = $('<input />')
-      .attr('type', 'submit')
-      .val('Submit Post');
+  var post_button = $('<button />')
+      .addClass('btn pr-button')
+      .text('Submit Post');
 
-  var post_form = $('<form />')
+  var post_form = $('<div />')
       .addClass('form-stacked')
-      .attr('method', 'post')
-      .attr('action', '{{ url_for('add_entry') }}')
-      .append(title_input, body_input, tags_input, parent_input, user_input, post_button);
+      .append(title_input, body_input, parent_input, post_button);
 
+  /*
   var item_label = $('<label />').text("Linked item's id:");
   var item_input = $('<input />')
       .addClass('span7')
@@ -325,10 +332,12 @@ function createPostDiv(type) {
       .attr('method', 'post')
       .attr('action', '{{ url_for('addLink') }}')
       .append(item_input, parent_input.clone(), user_input.clone(), link_button);
+  */
 
-    var post_div = $('<span />')
+  var post_div = $('<span />')
       .addClass('post-div')
-      .append(post_form, link_form);
+      //.append(post_form, link_form);
+      .append(post_form);
 
   slide.find('.node').append(post_div);
 }
@@ -394,7 +403,7 @@ function renderSlide(type) {
 
   var node = node_list[slide_id];
 
-  var children_list = $('<ul />');
+  var children_list = $('<ul />').attr('id', 'clist-' + node.id);
   for (var i = 0; i < node.child_rel_ids.length; i++) {
     children_list.append(createChildElement(node.child_rel_ids[i], type));
   };
@@ -499,7 +508,6 @@ $(document).ready(function() {
 
   var doc = $(document);
 
-
   // Remove scrollbar in JS
   $('.slides-container').css('overflow', 'hidden');
 
@@ -530,6 +538,7 @@ $(document).ready(function() {
     displayChild(disp_id, from);
   });
 
+  //toggle the post reply div
   doc.on('click', '.post-button', function() {
     if ($(this).parents('#parent-node').length === 0) {
       from = 'child';
@@ -541,9 +550,36 @@ $(document).ready(function() {
 
     if (from_selector.find('.post-div').length === 0) {
       createPostDiv(from);
+      $(this).text('Hide')
       return;
     }
     from_selector.find('.post-div').slideToggle('fast');
+    if ('Reply' === $(this).text()) {
+      $(this).text('Hide')
+    }
+    else {
+      $(this).text('Reply')
+    }
+  });
+
+  //submit an item
+  doc.on('click', '.pr-button', function() {
+    var pr_form = $(this).parent();
+    var pr_id = pr_form.parents('.node').attr('id').split('_')[1]
+
+    var pr_title = pr_form.find('input[name="title"]').val();
+    var pr_body = pr_form.find('textarea[name="body"]').val();
+    var pr_parent = pr_form.find('input[name="parent"]').val();
+
+    var URL = "{{ url_for('add_entry') }}";
+    $.post(URL,{user_id: user_id, title: pr_title, body: pr_body, parent: pr_parent, tags: ""}, 
+    function (data)
+    {
+      item_list[data.item.id] = data.item;
+      rel_list[data.rel.id] = data.rel;
+      user_list[data.user.id] = data.user;
+      $('#clist-' + pr_id).prepend(createChildElement(data.rel.id));
+    });
   });
 
   doc.on('click', '.parents-btn', function() {
@@ -574,7 +610,7 @@ $(document).ready(function() {
 {% endblock %}
 {% block body %}
   <div id="back"><a href="#" onclick="return false;">Back</a></div>
-  <br />
   <div id="slides-container">
+    <br />
   </div>
 {% endblock %}

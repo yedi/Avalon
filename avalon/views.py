@@ -194,17 +194,17 @@ def item_page(item_id):
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    if len(request.form['title']) < 1:
-        flash('Please give a title to your post.')
-        return redirect(url_for('item_page', item_id=session['current_item']))
+    # if len(request.form['title']) < 1:
+    #     flash('Please give a title to your post.')
+    #     return redirect(url_for('item_page', item_id=session['current_item']))
 
     # if session['user_id'] != request.form['user_id']:
     #     flash('There is an issue with the session. Please login again')
     #     return redirect(url_for('item_page', item_id=session['current_item']))
 
-    if getUser(request.form['user_id']) is None:
-        flash('You must have a valid user account to post')
-        return redirect(url_for('item_page', item_id=session['current_item']))
+    # if getUser(request.form['user_id']) is None:
+    #     flash('You must have a valid user account to post')
+    #     return redirect(url_for('item_page', item_id=session['current_item']))
 
     cur = g.db.cursor()
 
@@ -233,9 +233,15 @@ def add_entry():
     #automatically upvote for the user
     process_vote(new_rel_id, request.form['user_id'], 'up')
 
-    flash('New entry was successfully posted')
+    #flash('New entry was successfully posted')
 
-    return redirect(url_for('item_page', item_id=parent_id))
+    ret_dict = {
+        "item": getItems([new_item_id])[0],
+        "rel": getRel(new_rel_id),
+        "user": getUser(request.form['user_id'])
+    }
+
+    return jsonify(ret_dict)
 
 
 @app.route('/addLink', methods=['POST'])
