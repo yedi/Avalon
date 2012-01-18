@@ -6,6 +6,13 @@ var item_list = {};
 var rel_list = {};
 var user_list = {};
 
+
+{% if session.user_id %}
+  g_user_id = {{session.user_id}};
+{% else %}
+  g_user_id = -1;
+{% endif %}
+
 var inputDiv = function() {
   return $('<div />').addClass('input');
 }
@@ -30,7 +37,7 @@ function updateVC(rel_id, uv_c, dv_c) {
  */
 function vote(vote_type, rel_id) {
   var URL = "{{ url_for('vote') }}";
-  $.post(URL,{rel_id: rel_id, user_id: {{session.user_id}}, vote_type: vote_type}, 
+  $.post(URL,{rel_id: rel_id, user_id: g_user_id, vote_type: vote_type}, 
   function (data)
   {
     updateVC(rel_id, data.uv_c, data.dv_c);
@@ -237,7 +244,7 @@ $(document).ready(function() {
     var reply_to = parseInt(reply_div.attr('id').split('-')[1], 10);
 
     var URL = "{{ url_for('postComment') }}";
-    $.post(URL, {head_item: item.id, parent: reply_to, body: reply_body, user_id: {{session.user_id}} }, 
+    $.post(URL, {head_item: item.id, parent: reply_to, body: reply_body, user_id: g_user_id }, 
     function (data)
     {
       item_list[data.item.id] = data.item;
@@ -269,9 +276,12 @@ $(document).ready(function() {
     All <span style="font-weight:bold;">{{ ii['comment_rels']|length }}</span> comments
   </div>
   <br />
+
+{% if session.username %}
   <div id="reply-to-item">
   Commenting as: <span style="font-weight: bold;">{{ session.username }}
   </div>
+{% endif %}
   <br />
   <div id="comments">
   </div>
