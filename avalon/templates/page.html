@@ -652,6 +652,14 @@ $(document).ready(function() {
 
   //submit an item
   doc.on('click', '.pr-button', function() {
+    if ($(this).parents('#parent-node').length === 0) {
+      from = 'child';
+    }
+    else {
+      from = 'parent';
+    }
+    var from_selector = $('#' + from + '-node');
+
     var pr_form = $(this).parent();
     var pr_id = pr_form.parents('.node').attr('id').split('_')[1]
 
@@ -666,6 +674,8 @@ $(document).ready(function() {
       item_list[data.item.id] = data.item;
       rel_list[data.rel.id] = data.rel;
       user_list[data.user.id] = data.user;
+      from_selector.find('.post-button').text('Reply')
+      pr_form.parent().remove();
       $('#clist-' + pr_id).prepend(createChildElement(data.rel.id));
     });
   });

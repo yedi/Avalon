@@ -241,6 +241,10 @@ $(document).ready(function() {
   doc.on('click', '.save-button', function() {
     var reply_div = $(this).parent();
     var reply_body = reply_div.find('textarea').val();
+    if (reply_body === null || reply_body === "") {
+      alert("Your comment can't be empty");
+      return;
+    }
     var reply_to = parseInt(reply_div.attr('id').split('-')[1], 10);
 
     var URL = "{{ url_for('postComment') }}";
