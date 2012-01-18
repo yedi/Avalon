@@ -151,9 +151,14 @@ function createNodeElement(rel_id) {
       //.append(vote_element('up'), votecount, title, vote_element('down'));
       .append(votecount, item.title);
 
+  var disc_link = $('<a />')
+      .addClass('disc-link')
+      .attr('href', "/view/" + item.id)
+      .text('View Discussion');
+
   var body = $('<span />')
       .addClass('node-body span7')
-      .text(item.body);
+      .append(item.body, '<br />', disc_link);
 
   var tags_div = $('<span />')
       .addClass('tags span7')
@@ -169,12 +174,13 @@ function createNodeElement(rel_id) {
       .attr('onclick', 'return false')
       .text(user_list[item.user_id].username);
 
-  var parents_btn = $('<a />')
-      .addClass('parents-btn')
+  var mi_button = $('<a />')
+      .addClass('mi-button')
       .attr('href', '#')
       .attr('onclick', 'return false')
-      .text("View parents")
+      .text("More options")
 
+  //add linked by info if necessary
   var linked_by = $('<span />');
   if (rel.linked_by !== null) {
     var lb_link = $('<a />')
@@ -189,7 +195,13 @@ function createNodeElement(rel_id) {
 
   var node_footer = $('<div />')
       .addClass('node-footer span7')
-      .append(by_user, linked_by, post_button, parents_btn);
+      .append(by_user, linked_by, post_button, mi_button)
+      .hover(function() {
+        $(this).find('.mi-button').show();
+      },
+      function() {
+        $(this).find('.mi-button').hide();
+      });
 
   var node_element = $('<span />')
       .addClass('node')
@@ -314,26 +326,6 @@ function createPostDiv(type) {
       .addClass('form-stacked')
       .append(title_input, body_input, parent_input, post_button);
 
-  /*
-  var item_label = $('<label />').text("Linked item's id:");
-  var item_input = $('<input />')
-      .addClass('span7')
-      .attr('type', 'number')
-      .attr('name', 'item');
-  item_input = inputDiv().append(item_input);
-  item_input = clearfix().append(item_label, item_input);
-
-  var link_button = $('<input />')
-      .attr('type', 'submit')
-      .val('Submit Link');
-
-  var link_form = $('<form />')
-      .addClass('form-stacked')
-      .attr('method', 'post')
-      .attr('action', '{{ url_for('addLink') }}')
-      .append(item_input, parent_input.clone(), user_input.clone(), link_button);
-  */
-
   var post_div = $('<span />')
       .addClass('post-div')
       //.append(post_form, link_form);
@@ -375,7 +367,103 @@ function createParentsDiv(type) {
     parents_div.append(parent(slide_parents[i]), " ");
   }
 
-  slide.find('.node').append(parents_div);
+  return parents_div;
+  //slide.find('.node').append(parents_div);
+}
+
+/*
+ * creates the link div for a node
+ * @todo: need to finish this
+ */
+function createLinkDiv(type) {
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+
+  var item_label = $('<label />').text("Linked item's id:");
+  var item_input = $('<input />')
+      .addClass('span7')
+      .attr('type', 'number')
+      .attr('name', 'item');
+  item_input = inputDiv().append(item_input);
+  item_input = clearfix().append(item_label, item_input);
+
+  var link_button = $('<input />')
+      .attr('type', 'submit')
+      .val('Submit Link');
+
+  var link_form = $('<form />')
+      .addClass('form-stacked')
+      .attr('method', 'post')
+      .attr('action', '{{ url_for('addLink') }}')
+      .append(item_input, parent_input.clone(), user_input.clone(), link_button);
+}
+
+/*
+ * creates the more options div for a node
+ */
+function createMoreDiv(type) {
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+
+  var moreBtnHandler = function() {
+    if ($(this).parents('#parent-node').length === 0) {
+      from = 'child';
+    }
+    else {
+      from = 'parent';
+    }
+
+    md = $(this).parent();
+
+    if ($(this).attr('class') === 'parents-btn') {
+      if (md.find('.parents-div').length === 0) {
+        md.append(createParentsDiv(from));
+        return;
+      }
+
+      md.find('.link-div').hide();
+      md.find('.parents-div').show('fast');
+    }
+
+    else if ($(this).attr('class') === 'link-btn') {
+      if (md.find('.link-div').length === 0) {
+        md.append(createLinkDiv(from));
+        return;
+      }
+
+      md.find('.parents-div').hide();
+      md.find('.link-div').show('fast');
+    }
+  }
+
+  parents_btn = $('<a />')
+      .addClass('parents-btn')
+      .attr('href', '#')
+      .attr('onclick', 'return false;')
+      .text('View Parents')
+      .click(moreBtnHandler);
+
+  link_btn = $('<a />')
+      .addClass('link-btn')
+      .attr('href', '#')
+      .attr('onclick', 'return false;')
+      .text('Link an item')
+      .click(moreBtnHandler);
+
+  close_btn = $('<a />')
+      .addClass('more-close')
+      .attr('href', '#')
+      .attr('onclick', 'return false;')
+      .text('Close')
+      .click(function() {
+        $(this).parent().hide('fast');
+      });
+
+  more_div = $('<div />')
+      .addClass('span7 more-div')
+      .append(parents_btn, /*link_btn,*/ close_btn);
+
+  slide.find('.node').append(more_div);
 }
 
 /**
@@ -582,7 +670,7 @@ $(document).ready(function() {
     });
   });
 
-  doc.on('click', '.parents-btn', function() {
+  doc.on('click', '.mi-button', function() {
     if ($(this).parents('#parent-node').length === 0) {
       from = 'child';
     }
@@ -591,12 +679,14 @@ $(document).ready(function() {
     }
     var from_selector = $('#' + from + '-node');
 
-    if (from_selector.find('.parents-div').length === 0) {
-      createParentsDiv(from);
+    if (from_selector.find('.more-div').length === 0) {
+      createMoreDiv(from);
       return;
     }
-    from_selector.find('.parents-div').slideToggle('fast');
+    from_selector.find('.more-div').slideToggle('fast');
   });
+
+  doc.hover()
 
   //shift back one level
   $('#back').on("click", function(){
