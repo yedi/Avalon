@@ -477,7 +477,17 @@ def deleteItem():
 
 @app.route('/editItem', methods=['POST'])
 def editItem():
-    return
+    item = getItems([request.form['item_id']])[0]
+    user = getUser(request.form['user_id'])
+
+    if item['user_id'] != user['id']:
+        return "Not deleted"
+
+    cur = g.db.cursor()
+    cur.execute('UPDATE items SET title = ?, body = ? WHERE id = ?', 
+                [request.form['title'], request.form['body'], item['id']])
+    g.db.commit()
+    return jsonify(getItems([item['id']])[0])
 
 
 @app.route('/about')
