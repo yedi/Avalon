@@ -1,4 +1,6 @@
 <!DOCTYPE html>
+<html lang="en">
+<head>
 <title>Avalon</title>
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='bootstrap') }}/lib/bootstrap.less">
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='avalon.less') }}">
@@ -8,10 +10,11 @@
 //   $('#{{ tab }}').addClass('active');
 // });
 </script>
+<meta charset="UTF-8">
 {% block header %}{% endblock %}
 <script type="text/javascript" src="{{ url_for('static', filename='less-1.1.5.min.js') }}"></script>
 <div class=page>
-  <div class = "header">
+  <header class = "header">
   <div class = "container">
   <a id="home-text"  href="{{ url_for('index') }}" ><span class="h1">Avalon</span></a>
          <span id="right-links">
@@ -32,7 +35,7 @@
       </ul>
 
   </div>
-  </div>
+  </header>
   <div class="container">
    
   {% for message in get_flashed_messages() %}
@@ -40,3 +43,4 @@
   {% endfor %}
   {% block body %}{% endblock %}
 </div>
+</html>

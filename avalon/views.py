@@ -194,17 +194,15 @@ def item_page(item_id):
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    # if len(request.form['title']) < 1:
-    #     flash('Please give a title to your post.')
-    #     return redirect(url_for('item_page', item_id=session['current_item']))
+    if len(request.form['title']) < 1:
+        return
 
     # if session['user_id'] != request.form['user_id']:
     #     flash('There is an issue with the session. Please login again')
     #     return redirect(url_for('item_page', item_id=session['current_item']))
 
-    # if getUser(request.form['user_id']) is None:
-    #     flash('You must have a valid user account to post')
-    #     return redirect(url_for('item_page', item_id=session['current_item']))
+    if getUser(request.form['user_id']) is None:
+        return
 
     cur = g.db.cursor()
 
@@ -459,6 +457,27 @@ def postComment():
     }
 
     return jsonify(ret_dict)
+
+
+@app.route('/deleteItem', methods=['POST'])
+def deleteItem():
+    item = getItems([request.form['item_id']])[0]
+    user = getUser(request.form['user_id'])
+
+    if item['user_id'] != user['id']:
+        return "Not deleted"
+
+    cur = g.db.cursor()
+    cur.execute('delete from items where id = ?', [item['id']])
+    cur.execute('delete from relations where child = ? or parent = ?', [item['id'], item['id']])
+    cur.execute('delete from tag_relations where item = ?', [item['id']])
+    g.db.commit()
+    return "delete successful"
+
+
+@app.route('/editItem', methods=['POST'])
+def editItem():
+    return
 
 
 @app.route('/about')

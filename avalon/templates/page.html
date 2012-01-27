@@ -206,7 +206,8 @@ function createNodeElement(rel_id) {
   var node_element = $('<span />')
       .addClass('node')
       .attr('id', 'n_' + rel.id)
-      .append(node_title, body, tags_div, node_footer);
+      //.append(node_title, body, tags_div, node_footer);
+      .append(node_title, body, node_footer);
 
   return node_element;
 }
@@ -359,7 +360,7 @@ function createParentsDiv(type) {
   }
 
   var parents_div = $('<div />')
-      .addClass('parents-div')
+      .addClass('opt-div parents-div')
       .text('Parents: ')
       //.append(parent_links);
 
@@ -398,12 +399,87 @@ function createLinkDiv(type) {
       .append(item_input, parent_input.clone(), user_input.clone(), link_button);
 }
 
+function deleteItem(d_id, cb_func) {
+  var URL = "{{ url_for('deleteItem') }}";
+  $.post(URL,{user_id: user_id, item_id: d_id}, 
+  function (data)
+  {
+    cb_func();
+  });
+}
+
+function removeItems(array, list) {
+  var i = 0;
+  while (i < array.length) {
+    if (array[i] in list) {
+      array.splice(i, 1);
+    } 
+    else {
+      i++;
+    }
+  }
+}
+
+function getRelIds(c_id) {
+  var ret_rel_ids = [];
+  for (var key in rel_list) {
+    if (rel_list[key].child === c_id) {
+      ret_rel_ids.push(parseInt(key, 10));
+    }
+  }
+  return ret_rel_ids;
+}
+
+function removeItem(r_id) {
+  $('#c_' + r_id).remove()
+  rel_ids = getRelIds(r_id);
+  for (var key in node_list) {
+    node_list[key].child_rel_ids = removeItems(node_list[key].child_rel_ids, rel_ids);
+  }
+}
+/*
+ * creates the delete div for a node
+ */
+function createDeleteDiv(type) {
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+  var d_item = item_list[rel_list[slide_id].child];
+
+  var yes_btn = $('<button />')
+      .addClass('btn')
+      .css('margin-right', '20px')
+      .text('Yes')
+      .click(function() {
+        $(this).parent().html("Deleting...");
+        deleteItem(d_item.id, function() {
+          slide.html("This item was deleted");
+          removeItem(d_item.id);
+          renderSlide('parent');
+          renderSlide('child');
+        });
+      });
+
+  var no_btn = $('<button />')
+      .addClass('btn')
+      .text('No')
+      .click(function() {
+        $(this).parent().hide('fast');
+      });
+
+  var del_div = $('<div />')
+      .addClass('opt-div del-div')
+      .append('Are you sure you want to delete this item? <br />', yes_btn, no_btn);
+
+  return del_div;
+}
+
 /*
  * creates the more options div for a node
  */
 function createMoreDiv(type) {
   var slide = $('#' + type + '-node');
   var slide_id = (type === 'parent')?parent_id:child_id;
+  var m_item = item_list[rel_list[slide_id].child];
 
   var moreBtnHandler = function() {
     if ($(this).parents('#parent-node').length === 0) {
@@ -417,38 +493,65 @@ function createMoreDiv(type) {
 
     if ($(this).attr('class') === 'parents-btn') {
       if (md.find('.parents-div').length === 0) {
+        md.find('.opt-div').hide();
         md.append(createParentsDiv(from));
         return;
       }
 
-      md.find('.link-div').hide();
+      // md.find('.link-div').hide();
+      md.find('.opt-div').hide();
       md.find('.parents-div').show('fast');
     }
 
     else if ($(this).attr('class') === 'link-btn') {
       if (md.find('.link-div').length === 0) {
+        md.find('.opt-div').hide();
         md.append(createLinkDiv(from));
         return;
       }
 
-      md.find('.parents-div').hide();
+      // md.find('.parents-div').hide();
+      md.find('.opt-div').hide();
       md.find('.link-div').show('fast');
+    }
+
+    else if ($(this).attr('class') === 'del-btn') {
+      if (md.find('.del-div').length === 0) {
+        md.find('.opt-div').hide();
+        md.append(createDeleteDiv(from));
+        return;
+      }
+
+      md.find('.opt-div').hide();
+      md.find('.del-div').show('fast');
     }
   }
 
-  parents_btn = $('<a />')
+  var parents_btn = $('<a />')
       .addClass('parents-btn')
       .attr('href', '#')
       .attr('onclick', 'return false;')
       .text('View Parents')
       .click(moreBtnHandler);
 
-  link_btn = $('<a />')
+  var link_btn = $('<a />')
       .addClass('link-btn')
       .attr('href', '#')
       .attr('onclick', 'return false;')
       .text('Link an item')
       .click(moreBtnHandler);
+
+  if (m_item.user_id === user_id) {
+    var del_btn = $('<a />')
+        .addClass('del-btn')
+        .attr('href', '#')
+        .attr('onclick', 'return false;')
+        .text('Delete')
+        .click(moreBtnHandler);
+  }
+  else {
+    var del_btn = "";
+  }
 
   close_btn = $('<a />')
       .addClass('more-close')
@@ -461,7 +564,7 @@ function createMoreDiv(type) {
 
   more_div = $('<div />')
       .addClass('span7 more-div')
-      .append(parents_btn, /*link_btn,*/ close_btn);
+      .append(parents_btn, /*link_btn,*/ del_btn, close_btn);
 
   slide.find('.node').append(more_div);
 }
@@ -622,7 +725,15 @@ $(document).ready(function() {
     }
 
     disp_id = parseInt($(this).attr('name').split('_')[1], 10);
-    if (disp_id === child_id) return;
+
+    if (disp_id === child_id) {
+      if (!shiftSlides(-1)) return;
+      parent_id = getIdOf(slide_list[currentPosition]);
+      child_id = getIdOf(slide_list[currentPosition + 1]);
+      highlightChild();
+      return;
+    }
+
     displayChild(disp_id, from);
   });
 
@@ -667,6 +778,8 @@ $(document).ready(function() {
     var pr_body = pr_form.find('textarea[name="body"]').val();
     var pr_parent = pr_form.find('input[name="parent"]').val();
 
+    pr_div = pr_form.parent()
+    pr_div.html('Submitting....');
     var URL = "{{ url_for('add_entry') }}";
     $.post(URL,{user_id: user_id, title: pr_title, body: pr_body, parent: pr_parent, tags: ""}, 
     function (data)
@@ -675,7 +788,7 @@ $(document).ready(function() {
       rel_list[data.rel.id] = data.rel;
       user_list[data.user.id] = data.user;
       from_selector.find('.post-button').text('Reply')
-      pr_form.parent().remove();
+      pr_div.remove();
       $('#clist-' + pr_id).prepend(createChildElement(data.rel.id));
     });
   });
@@ -709,7 +822,7 @@ $(document).ready(function() {
 </script>
 {% endblock %}
 {% block body %}
-  <div id="back"><a href="#" onclick="return false;">Back</a></div>
+  <!-- <div id="back"><a href="#" onclick="return false;">Back</a></div> -->
   <div id="slides-container">
     <br />
   </div>
