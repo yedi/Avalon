@@ -203,13 +203,8 @@ function createNodeElement(rel_id) {
 
   var node_footer = $('<div />')
       .addClass('node-footer span7')
-      .append(by_user, linked_by, post_button, mi_button)
-      .hover(function() {
-        $(this).find('.mi-button').show();
-      },
-      function() {
-        $(this).find('.mi-button').hide();
-      });
+      .append(by_user, linked_by, post_button, mi_button);
+      
 
   var node_element = $('<span />')
       .addClass('node')
@@ -424,6 +419,7 @@ function getRelIds(c_id) {
   var ret_rel_ids = [];
   for (var key in rel_list) {
     if (rel_list[key].child === c_id) {
+      if (key === 'root') ret_rel_ids.push(key);
       ret_rel_ids.push(parseInt(key, 10));
     }
   }
@@ -501,7 +497,7 @@ function createEditDiv(type) {
   body_input = clearfix().append(body_label, body_input);
 
   var post_button = $('<button />')
-      .addClass('btn pr-button')
+      .addClass('btn ed-button')
       .text('Submit Edit')
       .click(function () {
         var URL = "{{ url_for('editItem') }}";
@@ -816,6 +812,7 @@ $(document).ready(function() {
       from = 'parent';
     }
     var from_selector = $('#' + from + '-node');
+    var slide_id = (from === 'parent')?parent_id:child_id;
 
     var pr_form = $(this).parent();
     var pr_id = pr_form.parents('.node').attr('id').split('_')[1]
@@ -832,12 +829,20 @@ $(document).ready(function() {
     {
       item_list[data.item.id] = data.item;
       rel_list[data.rel.id] = data.rel;
+      //node_list[slide_id].child_rel_list.push(data.rel.id)
       user_list[data.user.id] = data.user;
       from_selector.find('.post-button').text('Reply')
       pr_div.remove();
       $('#clist-' + pr_id).prepend(createChildElement(data.rel.id));
     });
   });
+
+  doc.on("mouseenter", ".node-footer", function() {
+        $(this).find('.mi-button').show();
+      })
+      .on("mouseleave", ".node-footer", function() {
+        $(this).find('.mi-button').hide();
+      });
 
   doc.on('click', '.mi-button', function() {
     if ($(this).parents('#parent-node').length === 0) {
