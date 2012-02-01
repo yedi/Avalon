@@ -244,21 +244,31 @@ def add_entry():
 
 @app.route('/addLink', methods=['POST'])
 def addLink():
-    item_id, parent_id, user_id = request.form['item'], request.form['parent'], request.form['user_id']
-    if (not getItems([item_id])[0]) | (not getItems([parent_id])[0]) | (not getUser(user_id)):
+    l_item_id, parent_id, user_id = request.form['link_item'], request.form['parent'], request.form['user_id']
+    if (not getItems([l_item_id])[0]) | (not getItems([parent_id])[0]) | (not getUser(user_id)):
         return "Link error"
 
     cur = g.db.cursor()
     cur.execute('insert into relations (parent, child, linked_by, time_linked) values (?, ?, ?, ?)',
-                 [parent_id, item_id, user_id, datetime.now()])
+                 [parent_id, l_item_id, user_id, datetime.now()])
     new_rel_id = cur.lastrowid
     g.db.commit()
 
     process_vote(new_rel_id, user_id, 'up')
 
-    flash('Item (' + str(item_id) + ') was successfully linked')
+    #flash('Item (' + str(l_item_id) + ') was successfully linked')
 
-    return redirect(url_for('item_page', item_id=parent_id))
+    new_rel = getRel(new_rel_id)
+    rel_child = getItems([new_rel['child']])[0]
+    child_user = getUser(rel_child['user_id'])
+
+    ret_dict = {
+        "new_rel": new_rel,
+        "rel_child": rel_child,
+        "child_user": child_user
+    }
+
+    return jsonify(ret_dict)
 
 
 @app.route('/register', methods=['GET', 'POST'])
