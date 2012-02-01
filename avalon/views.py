@@ -475,6 +475,24 @@ def deleteItem():
     return "delete successful"
 
 
+@app.route('/deleteRel', methods=['POST'])
+def deleteRel():
+    rel = getRel(rel_id=int(request.form['rel_id']))
+    #return str(type(request.form['rel_id']))
+    user = getUser(request.form['user_id'])
+
+    # if user is None or rel is None:
+    #     return "Not deleted"
+
+    # if rel['linked_by'] != user['id']:
+    #     return "Not deleted"
+
+    cur = g.db.cursor()
+    cur.execute('delete from relations where id = ?', [rel['id']])
+    g.db.commit()
+    return "delete successful"
+
+
 @app.route('/editItem', methods=['POST'])
 def editItem():
     item = getItems([request.form['item_id']])[0]

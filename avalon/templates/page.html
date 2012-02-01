@@ -403,16 +403,29 @@ function deleteItem(d_id, cb_func) {
   });
 }
 
-function removeItems(array, list) {
+function deleteRel(d_rel_id, cb_func) {
+  var URL = "{{ url_for('deleteRel') }}";
+  $.post(URL,{user_id: user_id, rel_id: d_rel_id}, 
+  function (data)
+  {
+    cb_func();
+  });
+}
+
+function removeItemsFromArray(array, loi) {
   var i = 0;
+  var removedany = false;
   while (i < array.length) {
-    if (array[i] in list) {
+    if (loi.indexOf(array[i]) !== -1) {
       array.splice(i, 1);
+      removedany = true;
     } 
     else {
       i++;
     }
   }
+
+  return removedany
 }
 
 function getRelIds(c_id) {
@@ -430,7 +443,7 @@ function removeItemLocally(r_id) {
   $('#c_' + r_id).remove()
   rel_ids = getRelIds(r_id);
   for (var key in node_list) {
-    node_list[key].child_rel_ids = removeItems(node_list[key].child_rel_ids, rel_ids);
+    node_list[key].child_rel_ids = removeItemsFromArray(node_list[key].child_rel_ids, rel_ids);
   }
 }
 
@@ -441,6 +454,7 @@ function createDeleteDiv(type) {
   var slide = $('#' + type + '-node');
   var slide_id = (type === 'parent')?parent_id:child_id;
   var d_item = item_list[rel_list[slide_id].child];
+  var d_parent = item_list[rel_list[slide_id].parent];
 
   var yes_btn = $('<button />')
       .addClass('btn')
@@ -448,9 +462,31 @@ function createDeleteDiv(type) {
       .text('Yes')
       .click(function() {
         $(this).parent().html("Deleting...");
-        deleteItem(d_item.id, function() {
-          slide.html("This item was deleted");
-          removeItemLocally(d_item.id);
+        deleteRel(slide_id, function() {
+          // slide.html("This link was deleted");
+          //removeItemLocally(d_item.id);
+          alert("This item was deleted")
+          for (var key in node_list) {
+            if (removeItemsFromArray(node_list[key].child_rel_ids, [slide_id])) {
+              break;
+            }
+          }
+
+          // if ( type === "parent") {
+          //   shiftSlides(-2);
+          // }
+          // else {
+          //   shiftSlides(-1);
+          // }
+          shiftSlides(-1);
+          parent_id = getIdOf(slide_list[currentPosition]);
+          if (type === 'parent' || currentPosition < 2) {
+            child_id = -1;
+          }
+          else {
+            child_id = getIdOf(slide_list[currentPosition + 1]);
+          }
+
           renderSlide('parent');
           renderSlide('child');
         });
@@ -576,19 +612,22 @@ function createMoreDiv(type) {
       .text('Link an item')
       .click(moreBtnHandler);
 
-  if (m_item.user_id === user_id) {
+  if (m_item.user_id === user_id || rel_list[slide_id].linked_by === user_id) {
     var del_btn = $('<a />')
-            .addClass('del-btn')
-            .attr('href', '#')
-            .attr('onclick', 'return false;')
-            .text('Delete')
-            .click(moreBtnHandler),
-        edit_btn = $('<a />')
-            .addClass('edit-btn')
-            .attr('href', '#')
-            .attr('onclick', 'return false;')
-            .text('Edit')
-            .click(moreBtnHandler);
+        .addClass('del-btn')
+        .attr('href', '#')
+        .attr('onclick', 'return false;')
+        .text('Delete')
+        .click(moreBtnHandler);
+
+    if (m_item.user_id === user_id) {
+      var edit_btn = $('<a />')
+          .addClass('edit-btn')
+          .attr('href', '#')
+          .attr('onclick', 'return false;')
+          .text('Edit')
+          .click(moreBtnHandler);
+    }
   }
   else {
     var del_btn = "",
@@ -614,10 +653,16 @@ function createMoreDiv(type) {
 /**
  * Renders either the child slide or the parent slide.
  * Fetches an item and it's children from the server if the item isn't in the node_list
+ * renders a blank slide if the child_id is -1
  */
 function renderSlide(type) { 
   var slide = $('#' + type + '-node');
   var slide_id = (type === 'parent')?parent_id:child_id;
+
+  if (slide_id < 0) {
+    slide.empty();
+    return;
+  }
 
   //if node information isn't store locally, get the info from server
   if (!(inNodeList(slide_id))) {
