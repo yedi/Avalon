@@ -4,13 +4,11 @@
 <script type="text/javascript" language="javascript">
 var item_list = {};
 var rel_list = {};
-var user_list = {};
 
-
-{% if session.user_id %}
-  g_user_id = {{session.user_id}};
+{% if session.username %}
+  g_username = '{{session.username}}';
 {% else %}
-  g_user_id = -1;
+  g_username = -1;
 {% endif %}
 
 var inputDiv = function() {
@@ -37,7 +35,7 @@ function updateVC(rel_id, uv_c, dv_c) {
  */
 function vote(vote_type, rel_id) {
   var URL = "{{ url_for('vote') }}";
-  $.post(URL,{rel_id: rel_id, user_id: g_user_id, vote_type: vote_type}, 
+  $.post(URL,{rel_id: rel_id, username: g_username, vote_type: vote_type}, 
   function (data)
   {
     updateVC(rel_id, data.uv_c, data.dv_c);
@@ -65,7 +63,7 @@ function createReplyForm(item_id) {
       .attr('id', 'rt-' + item_id)
       .append(body_input, save_button);
 
-  if (item_id !== item.id) {
+  if (item_id !== item._id) {
     var cancel_button = $('<button />')
         .addClass('btn cancel-button')
         .text('cancel');
@@ -80,7 +78,6 @@ function createReplyForm(item_id) {
 function createCommentElement(rel_id) {
   var rel = rel_list[rel_id];
   var c_item = item_list[rel.child];
-  var user = user_list[c_item.user_id]
 
   //returns the element for the up/down vote icon
   var vote_element = function (type) {
@@ -88,8 +85,8 @@ function createCommentElement(rel_id) {
     var ele = $('<a />')
         .addClass('nv-' + type)
         .attr('href', '#')
-        .attr('onclick', "return vote('" + type + "', " + rel.id + ")")
-        //.click(vote(type, rel.id))
+        .attr('onclick', "return vote('" + type + "', " + rel._id + ")")
+        //.click(vote(type, rel._id))
         .text(icon);
     return ele;
   }
@@ -106,7 +103,7 @@ function createCommentElement(rel_id) {
 
   var user_link = $('<a />')
       .addClass('comment-user')
-      .text(user.username);
+      .text(rel.user);
 
   var votecount = $('<span />')
       .addClass('comment-vc')
@@ -121,7 +118,7 @@ function createCommentElement(rel_id) {
 
   var reply = $('<a />')
       .addClass('reply-link')
-      .attr('id', 'rl-' + c_item.id)
+      .attr('id', 'rl-' + c_item._id)
       .attr('href', "#")
       .attr('onclick', 'return false;')
       .text('reply');
@@ -168,13 +165,13 @@ function createChildComments(item_id, recursive) {
   }
 
   for (var i = 0; i < comments.length; i++) {
-    var comment_ele = createCommentElement(comments[i].id);
+    var comment_ele = createCommentElement(comments[i]._id);
 
     if (recursive) {
-      var cc_eles = createChildComments(comments[i].id, recursive);
+      var cc_eles = createChildComments(comments[i].child, recursive);
       var cc_div = $('<span />')
           .addClass('nested-comments')
-          .attr('id', 'ncd-' + comments[i].id);
+          .attr('id', 'ncd-' + comments[i].child);
 
       for (var j = 0; j < cc_eles.length; j++) {
         cc_div.append(cc_eles[j])
@@ -193,20 +190,15 @@ function createChildComments(item_id, recursive) {
   var item = item_info.item;
   var comment_rels = item_info.comment_rels;
   var comment_items = item_info.comment_items;
-  var users = item_info.users;
 
-  item_list[item.id] = item;
+  item_list[item._id] = item;
   for (var i = 0; i < comment_items.length; i++) {
-    item_list[comment_items[i].id] = comment_items[i];
+    item_list[comment_items[i]._id] = comment_items[i];
   }
 
   for (var i = 0; i < comment_rels.length; i++) {
-    rel_list[comment_rels[i].id] = comment_rels[i];
+    rel_list[comment_rels[i]._id] = comment_rels[i];
   }
-
-  for (var i = 0; i < users.length; i++) {
-    user_list[users[i].id] = users[i];
-  };
 {% endif %}
 
 
@@ -214,9 +206,9 @@ function createChildComments(item_id, recursive) {
 <script type="text/javascript" language="javascript">
 $(document).ready(function() {
   var doc = $(document);
-  $('#reply-to-item').append(createReplyForm(item.id));
+  $('#reply-to-item').append(createReplyForm(item._id));
 
-  var main_comments = createChildComments(item.id, true);
+  var main_comments = createChildComments(item._id, true);
   for (var i = 0; i < main_comments.length; i++){
     $('#comments').append(main_comments[i]);
   }
@@ -225,7 +217,7 @@ $(document).ready(function() {
     parent_ele = $(this).parents('.comment-info');
 
     if (parent_ele.find('.reply-form').length === 0) {
-      var reply_id = parseInt($(this).attr('id').split('-')[1], 10)
+      var reply_id = $(this).attr('id').split('-')[1]
       var rf = createReplyForm(reply_id);
       parent_ele.append(rf).show('fast');
       return;
@@ -245,21 +237,20 @@ $(document).ready(function() {
       alert("Your comment can't be empty");
       return;
     }
-    var reply_to = parseInt(reply_div.attr('id').split('-')[1], 10);
+    var reply_to = reply_div.attr('id').split('-')[1];
 
     var URL = "{{ url_for('postComment') }}";
-    $.post(URL, {head_item: item.id, parent: reply_to, body: reply_body, user_id: g_user_id }, 
+    $.post(URL, {comment_parent: item._id, parent: reply_to, body: reply_body, username: g_username }, 
     function (data)
     {
-      item_list[data.item.id] = data.item;
-      data.rel.head_item = item.id;
-      rel_list[data.rel.id] = data.rel;
-      user_list[data.user.id] = data.user;
+      item_list[data.item._id] = data.item;
+      data.rel.comment_parent = item._id;
+      rel_list[data.rel._id] = data.rel;
 
-      if (data.rel.parent === item.id) {
-        $('#comments').prepend(createCommentElement(data.rel.id)).show('fast');
+      if (data.rel.parent === item._id) {
+        $('#comments').prepend(createCommentElement(data.rel._id)).show('fast');
       }
-      $('#ncd-' + data.rel.parent).prepend(createCommentElement(data.rel.id)).show('fast');
+      $('#ncd-' + data.rel.parent).prepend(createCommentElement(data.rel._id)).show('fast');
     });
     reply_div.remove();
   });

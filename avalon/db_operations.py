@@ -38,6 +38,8 @@ def prepareForClient(alist):
     #deleteList = ['password', 'acc_activated', 'votes']
     retlist = []
     for l in alist:
+        if not isinstance(l, dict):
+            continue
         newl = dict(l)
         for key in newl.keys():
             if isinstance(newl[key], datetime):

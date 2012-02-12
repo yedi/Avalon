@@ -34,6 +34,8 @@ def index():
 @app.route('/i/<item_id>')
 def item_page(item_id):
     item_id = ObjectId(item_id)
+    if db.getItem(item_id) is None:
+        return 'This item does not exist'
     session['current_item'] = item_id
     need = {
         "parent_items": True,
@@ -43,6 +45,25 @@ def item_page(item_id):
     node_dict = db.getItemInfo(item_id, need, True)
     # node_dict['users'][:] = [d['name'] for d in node_dict['users']]
     return render_template('page.html', nd=node_dict, tab='browse-tab')
+
+
+@app.route('/view/<item_id>')
+def viewItem(item_id):
+    item_id = ObjectId(item_id)
+    if db.getItem(item_id) is None:
+        return 'This item does not exist'
+    session['current_item'] = item_id
+    need = {
+        "parent_items": True,
+        "child_items": True,
+        "child_rels": True
+    }
+    item_info = db.getItemInfo(item_id, need, True)
+    item_info['comment_rels'] = db.getCommentRels(item_id)
+    item_info['comment_items'] = db.prepareForClient([db.getItem(rel['child']) for rel in item_info['comment_rels']])
+    item_info['comment_rels'] = db.prepareForClient(item_info['comment_rels'])
+
+    return render_template('view.html', ii=item_info, tab='view-tab')
 
 
 @app.route('/add', methods=['POST'])
@@ -195,70 +216,50 @@ def grabItem():
     """
 
 
-@app.route('/view/<int:item_id>')
-def viewItem(item_id):
-    """
-    session['current_item'] = item_id
-    need = {
-        "users": True,
-        "parent_items": True,
-        "child_items": True,
-        "child_rels": True
-    }
-    item_info = getItemInfo(item_id, need)
-    item_info['comment_rels'] = getComments(item_id)
+@app.route('/u/<username>/item')
+def userItemPage(username):
+    user = db.getUser(username)
+    if user is None:
+        return "This user doesn't exist"
 
-    item_info['comment_items'] = getItems([rel['child'] for rel in item_info['comment_rels']])
-
-    user_ids = set([it['user_id'] for it in item_info['comment_items']])
-    item_info['users'].extend([getUser(uid) for uid in user_ids])
-
-    return render_template('view.html', ii=item_info, tab='view-tab')
-    """
+    return redirect(url_for('item_page', item_id=user.item))
 
 
 @app.route('/postComment', methods=['POST'])
 def postComment():
-    """
-    # if session['user_id'] != request.form['user_id']:
-    #     return 'There is an issue with the session. Please login again.--' + str(session['user_id']) + '|' + str(request.form['user_id']) + "/n" + str(type(session['user_id'])) + '|' + str(type(request.form['user_id']))
+    username = request.form['username']
+    body = request.form['body']
+    parent_id = ObjectId(request.form['parent'])
+    cp_id = ObjectId(request.form['comment_parent'])
 
-    if getUser(request.form['user_id']) is None:
-        return'You must have a valid user account to post'
+    if db.getUser(username) is None:
+        return 'You must have a valid user account to post'
 
-    cur = g.db.cursor()
+    if len(request.form['body']) < 1:
+        return
 
-    #insert item into item table
-    cur.execute('insert into items (title, body, user_id, time_submitted) values (?, ?, ?, ?)',
-                 ["", request.form['body'], request.form['user_id'], datetime.now()])
-    new_item_id = cur.lastrowid
+    if db.getItem(parent_id) is None or db.getItem(cp_id) is None:
+        return 'Reply error'
 
-    #insert the relation into the relations tables
-    parent_id = request.form['parent']
-    cur.execute('insert into relations (parent, child) values(?, ?)',
-                 [parent_id, new_item_id])
-    new_rel_id = cur.lastrowid
+    #insert item
+    item_dict = {
+        'body': unicode(body),
+        'user': unicode(username),
+        'tags': [u'comment']
+    }
+    new_item = db.addItem(item_dict)
 
-    # insert comment tag
-    comment_tag = getTag('comment')
-    cur.execute('insert into tag_relations (item, tag) values (?, ?)', [new_item_id, comment_tag['id']])
-
-    # insert comment relation in db
-    cur.execute('insert into comments (head_item, rel_id) values (?, ?)', [request.form['head_item'], new_rel_id])
-
-    g.db.commit()
+    #insert the new rel
+    new_rel = db.addRel(parent_id, new_item._id, username, cp_id)
 
     #automatically upvote for the user
-    process_vote(new_rel_id, request.form['user_id'], 'up')
+    db.processVote(new_rel._id, request.form['username'], 'up')
 
     ret_dict = {
-        "item": getItems([new_item_id])[0],
-        "rel": getRel(new_rel_id),
-        "user": getUser(request.form['user_id'])
+        "item": db.prepareForClient([new_item])[0],
+        "rel": db.prepareForClient([db.getRel(new_rel._id)])[0]
     }
-
     return jsonify(ret_dict)
-    """
 
 
 @app.route('/deleteItem', methods=['POST'])
