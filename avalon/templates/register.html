@@ -2,6 +2,7 @@
 {% block header %}
 {% endblock %}
 {% block body %}
+{% if error %}<p class=error><strong>Error:</strong> {{ error }}{% endif %}
   <div class="register">
     <form action="{{ url_for('register') }}" method="post">
       <dl>

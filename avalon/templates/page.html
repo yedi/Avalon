@@ -7,7 +7,7 @@ var item_list = {};
 var rel_list = {};
 var node_list = {};
 var slide_list = [];
-var user_list = {};
+//var user_list = {};
 var parent_id = 'root';
 var child_id = null;
 
@@ -20,16 +20,16 @@ var lastSlide = 941;
 
 var inputDiv = function() {
   return $('<div />').addClass('input');
-}
+};
 
 var clearfix = function() {
     return $('<div />').addClass('clearfix');
-}
+};
 
 {% if not session.logged_in %}
-  var user_id = null;
+  var username = null;
 {% else %}
-  var user_id = {{ session.user_id }};
+  var username = '{{ session.username }}';
 {% endif %}
 
 /**
@@ -51,30 +51,30 @@ function inNodeList(node_id) {
  * adds the given node info the data on this client
  */
 function addNodeInfo(ni) {
-  node_list[ni.rel.id] = {
-    id: ni.rel.id,
+  node_list[ni.rel._id] = {
+    id: ni.rel._id,
     child_rel_ids: [],
     parent_ids: [],
   };
 
-  item_list[ni.item.id] = ni.item
+  item_list[ni.item._id] = ni.item
   for (var i = 0; i < ni.parent_items.length; i++) {
-    item_list[ni.parent_items[i].id] = ni.parent_items[i];
-    node_list[ni.rel.id].parent_ids.push(ni.parent_items[i].id);
+    item_list[ni.parent_items[i]._id] = ni.parent_items[i];
+    node_list[ni.rel._id].parent_ids.push(ni.parent_items[i]._id);
   }
   for (var i = 0; i < ni.child_items.length; i++) {
-    item_list[ni.child_items[i].id] = ni.child_items[i];
+    item_list[ni.child_items[i]._id] = ni.child_items[i];
   }
 
-  rel_list[ni.rel.id] = ni.rel;
+  rel_list[ni.rel._id] = ni.rel;
   for (var i = 0; i < ni.child_rels.length; i++) {
-    rel_list[ni.child_rels[i].id] = ni.child_rels[i];
-    node_list[ni.rel.id].child_rel_ids.push(ni.child_rels[i].id)
+    rel_list[ni.child_rels[i]._id] = ni.child_rels[i];
+    node_list[ni.rel._id].child_rel_ids.push(ni.child_rels[i]._id)
   }
 
-  for (var i = 0; i < ni.users.length; i++) {
-    user_list[ni.users[i].id] = ni.users[i];
-  };
+  // for (var i = 0; i < ni.users.length; i++) {
+  //   user_list[ni.users[i].name] = ni.users[i];
+  // };
 }
 
 /**
@@ -84,7 +84,7 @@ function getIdOf(node) {
   var n_id = node.find('.node').attr('id');
   n_id = n_id.split('_')[1];
   if (n_id === 'root') return n_id;
-  return parseInt(n_id, 10);
+  return n_id;
 }
 
 /**
@@ -104,7 +104,7 @@ function updateVC(rel_id, uv_c, dv_c) {
  */
 function vote(vote_type, rel_id) {
   var URL = "{{ url_for('vote') }}";
-  $.post(URL,{rel_id: rel_id, user_id: user_id, vote_type: vote_type}, 
+  $.post(URL,{rel_id: rel_id, username: username, vote_type: vote_type}, 
   function (data)
   {
     updateVC(rel_id, data.uv_c, data.dv_c);
@@ -120,8 +120,8 @@ function createNodeElement(rel_id) {
   var item = item_list[rel.child];
   //var node = node_list[rel_id];
 
-  if (item.id === 0) {
-    item.title = 'Welcome to Avalon';
+  if (item.tldr === '_root_title_') {
+    item.tldr = 'Welcome to Avalon';
     item.body = "Avalon is a place for collaborating with each other to solve our world's problems. Browse through the discussion and feel free to contribute."
   }
 
@@ -131,13 +131,13 @@ function createNodeElement(rel_id) {
     var ele = $('<a />')
         .addClass('nv-' + type)
         .attr('href', '#')
-        .attr('onclick', "return vote('" + type + "', " + rel.id + ")")
-        //.click(vote(type, rel.id))
+        .attr('onclick', "return vote('" + type + "', '" + rel._id + "')")
+        //.click(vote(type, rel._id))
         .text(icon);
     return ele;
   }
 
-  if (rel.id === 'root') {
+  if (rel._id === 'root') {
     var votecount = $('<span />')
         .css('visibility', 'hidden')
         .addClass('node-vc')
@@ -154,14 +154,14 @@ function createNodeElement(rel_id) {
         .append(vote_element('up'), vote_element('down'), vc_num);
   }
 
-  var node_title = $('<span />')
-      .addClass('node-title span7')
-      //.append(vote_element('up'), votecount, title, vote_element('down'));
-      .append(votecount, item.title);
+  var node_tldr = $('<span />')
+      .addClass('node-tldr span7')
+      //.append(vote_element('up'), votecount, tldr, vote_element('down'));
+      .append(votecount, item.tldr);
 
   var disc_link = $('<a />')
       .addClass('disc-link')
-      .attr('href', "/view/" + item.id)
+      .attr('href', "/view/" + item._id)
       .text('View Discussion');
 
   var body = $('<span />')
@@ -180,7 +180,7 @@ function createNodeElement(rel_id) {
       .addClass('by-user')
       .attr('href', '#')
       .attr('onclick', 'return false')
-      .text(user_list[item.user_id].username);
+      .text(item.user);
 
   var mi_button = $('<a />')
       .addClass('mi-button')
@@ -194,7 +194,7 @@ function createNodeElement(rel_id) {
     var lb_link = $('<a />')
         .attr('href', '#')
         .attr('onclick', 'return false')
-        .text(user_list[rel.linked_by].username)
+        .text(rel.linked_by)
 
     linked_by
         .text('Linked by ')
@@ -208,9 +208,9 @@ function createNodeElement(rel_id) {
 
   var node_element = $('<span />')
       .addClass('node')
-      .attr('id', 'n_' + rel.id)
-      //.append(node_title, body, tags_div, node_footer);
-      .append(node_title, body, node_footer);
+      .attr('id', 'n_' + rel._id)
+      //.append(node_tldr, body, tags_div, node_footer);
+      .append(node_tldr, body, node_footer);
 
   return node_element;
 }
@@ -222,18 +222,18 @@ function createChildElement(rel_id, type) {
   var rel = rel_list[rel_id];
   var item = item_list[rel.child];
 
-  var title = $('<div />')
-      .addClass('child-title span7')
-      .text(item.title);
+  var tldr = $('<div />')
+      .addClass('child-tldr span7')
+      .text(item.tldr);
 
-  var title_link = $('<a />')
+  var tldr_link = $('<a />')
       .addClass('child-link')
       .attr('name', 'cl_' + rel_id)
       .attr('href', '#')
       .attr('onclick', "return false;")
-      //.click(displayChild(rel.id, 'child'))
-      //.click(function(){displayChild(rel.id, this)})
-      .append(title);
+      //.click(displayChild(rel._id, 'child'))
+      //.click(function(){displayChild(rel._id, this)})
+      .append(tldr);
 
   var body = $('<div />')
       .addClass('child-body span7')
@@ -243,31 +243,33 @@ function createChildElement(rel_id, type) {
       .addClass('child-vc')
       .text(rel.upvotes - rel.downvotes);
 
-  var title_body = $('<span />')
+  var tldr_body = $('<span />')
       //.css({"display": "block", "float": "left"})
       .addClass('child-content')
-      .append(title_link, body);
+      .append(tldr_link, body);
 
   var child_element = $('<li />')
       .addClass('child')
-      .attr('id', 'c_' + rel.id)
+      .attr('id', 'c_' + rel._id)
       //.text(rel.upvotes - rel.downvotes)
-      .append(votecount, title_body);
+      .append(votecount, tldr_body);
 
   return child_element;
+}
+
+//var slide = function (id_string) {
+function makeslide(id_string) {
+    var ele = $('<span />')
+        .addClass('span8 node-slide')
+        .attr('id', id_string);
+    return ele;
 }
 
 /*
  * Create the initial parent and child node-slides
  */
 function createInitalSlides() {
-  var slide = function (id_string) {
-    var ele = $('<span />')
-        .addClass('span8 node-slide')
-        .attr('id', id_string);
-    return ele;
-  };
-  var initial_slides = [slide('parent-node'), slide('child-node')];
+  var initial_slides = [makeslide('parent-node'), makeslide('child-node')];
   slide_list = slide_list.concat(initial_slides);
   $('#slides-container').append(initial_slides[0], initial_slides[1]);
   return $('.node-slide');
@@ -281,13 +283,13 @@ function createPostDiv(type) {
   var slide_id = (type === 'parent')?parent_id:child_id;
   var item_id = rel_list[slide_id].child;
 
-  var title_label = $('<label />').text('Title:');
-  var title_input = $('<input />')
+  var tldr_label = $('<label />').text('tldr:');
+  var tldr_input = $('<input />')
       .addClass('span7')
       .attr('type', 'text')
-      .attr('name', 'title');
-  title_input = inputDiv().append(title_input);
-  title_input = clearfix().append(title_label, title_input);
+      .attr('name', 'tldr');
+  tldr_input = inputDiv().append(tldr_input);
+  tldr_input = clearfix().append(tldr_label, tldr_input);
 
   var body_label = $('<label />').text('Body:');
   var body_input = $('<textarea />')
@@ -320,7 +322,7 @@ function createPostDiv(type) {
 
   var post_form = $('<div />')
       .addClass('form-stacked')
-      .append(title_input, body_input, parent_input, post_button);
+      .append(tldr_input, body_input, parent_input, post_button);
 
   var post_div = $('<span />')
       .addClass('post-div')
@@ -339,11 +341,30 @@ function createParentsDiv(type) {
 
   var parent = function(item_id) {
     var parent_link = $('<a />')
-        .attr('href', '/' + item_id)
+        .attr('href', '/i/' + item_id)
         //.attr('onclick', 'return false;')
         .addClass('parent-link')
-        .text(item_list[item_id].title);
+        .text(item_list[item_id].tldr)
+        // .click(function() {
+        //   var sl = slide_list.length;
+        //   var sliceammount = sl - currentPosition;
+        //   slide_list = slide_list.splice(currentPosition, sliceammount);
 
+        //   if (type === 'parent') {
+        //     slide_list.unshift(makeslide('parent-node'));
+        //     child_id = parent_id;
+        //     parent_id = item_id;
+        //     currentPosition = 1;
+        //     shiftSlides(-1);
+        //   }
+        //   else {
+        //     currentPosition = 0;
+        //     parent_id = item_id;
+        //   }
+
+        //   renderSlide('parent');
+        //   renderSlide('child');
+        // });
     return parent_link;
   }
 
@@ -389,16 +410,16 @@ function createLinkDiv(type) {
       .text('Submit Link')
       .click(function () {
         var URL = "{{ url_for('addLink') }}";
-        var link_id = parseInt($(this).parent().find('input[name="link_id"]').val(), 10);
+        var link_id = $(this).parent().find('input[name="link_id"]').val();
 
-        $.post(URL,{parent: this_item.id, user_id: user_id, link_item: link_id}, 
+        $.post(URL,{parent: this_item._id, username: username, link_item: link_id}, 
         function (data)
         {
           //add the info for the new link relation to the local info 
-          node_list[slide_id].child_rel_ids.push(data.new_rel.id);
-          rel_list[data.new_rel.id] = data.new_rel;
-          item_list[data.rel_child.id] = data.rel_child;
-          user_list[data.child_user.id] = data.child_user;
+          node_list[slide_id].child_rel_ids.push(data.new_rel._id);
+          rel_list[data.new_rel._id] = data.new_rel;
+          item_list[data.rel_child._id] = data.rel_child;
+          // user_list[data.child_user.name] = data.child_user;
           
           //rerender
           renderSlide('parent');
@@ -422,7 +443,7 @@ function createLinkDiv(type) {
 
 function deleteItem(d_id, cb_func) {
   var URL = "{{ url_for('deleteItem') }}";
-  $.post(URL,{user_id: user_id, item_id: d_id}, 
+  $.post(URL,{username: username, item_id: d_id}, 
   function (data)
   {
     cb_func();
@@ -431,7 +452,7 @@ function deleteItem(d_id, cb_func) {
 
 function deleteRel(d_rel_id, cb_func) {
   var URL = "{{ url_for('deleteRel') }}";
-  $.post(URL,{user_id: user_id, rel_id: d_rel_id}, 
+  $.post(URL,{username: username, rel_id: d_rel_id}, 
   function (data)
   {
     cb_func();
@@ -490,7 +511,7 @@ function createDeleteDiv(type) {
         $(this).parent().html("Deleting...");
         deleteRel(slide_id, function() {
           // slide.html("This link was deleted");
-          //removeItemLocally(d_item.id);
+          //removeItemLocally(d_item._id);
           alert("This item was deleted")
           for (var key in node_list) {
             if (removeItemsFromArray(node_list[key].child_rel_ids, [slide_id])) {
@@ -498,9 +519,10 @@ function createDeleteDiv(type) {
             }
           }
 
+          oldcp = currentPosition;
           shiftSlides(-1);
           parent_id = getIdOf(slide_list[currentPosition]);
-          if (type === 'parent' || currentPosition < 2) {
+          if (type === 'parent' || oldcp < 1) {
             child_id = -1;
           }
           else {
@@ -534,14 +556,14 @@ function createEditDiv(type) {
   var slide_id = (type === 'parent')?parent_id:child_id;
   var e_item = item_list[rel_list[slide_id].child];
 
-  var title_label = $('<label />').text('Title:');
-  var title_input = $('<input />')
+  var tldr_label = $('<label />').text('tldr:');
+  var tldr_input = $('<input />')
       .addClass('span7')
       .attr('type', 'text')
-      .attr('name', 'title')
-      .val(e_item.title);
-  title_input = inputDiv().append(title_input);
-  title_input = clearfix().append(title_label, title_input);
+      .attr('name', 'tldr')
+      .val(e_item.tldr);
+  tldr_input = inputDiv().append(tldr_input);
+  tldr_input = clearfix().append(tldr_label, tldr_input);
 
   var body_label = $('<label />').text('Body:');
   var body_input = $('<textarea />')
@@ -557,14 +579,14 @@ function createEditDiv(type) {
       .text('Submit Edit')
       .click(function () {
         var URL = "{{ url_for('editItem') }}";
-        var new_title = $(this).parent().find('input[name="title"]').val();
+        var new_tldr = $(this).parent().find('input[name="tldr"]').val();
         var new_body = $(this).parent().find('textarea[name="body"]').val();
 
-        $.post(URL,{item_id: e_item.id, user_id: user_id, title: new_title, body: new_body}, 
+        $.post(URL,{item_id: e_item._id, username: username, tldr: new_tldr, body: new_body}, 
         function (data)
         {
-          item_list[e_item.id].title = data.title;
-          item_list[e_item.id].body = data.body;
+          item_list[e_item._id].tldr = data.tldr;
+          item_list[e_item._id].body = data.body;
 
           renderSlide('parent');
           renderSlide('child');
@@ -575,7 +597,7 @@ function createEditDiv(type) {
   var post_form = $('<div />')
       .addClass('form-stacked')
       .css('padding', '0px')
-      .append(title_input, body_input, post_button);
+      .append(tldr_input, body_input, post_button);
 
   var edit_div = $('<div />')
       .addClass('opt-div edit-div')
@@ -591,7 +613,7 @@ function createCIDiv(type) {
 
   var link_id = $('<code />')
       .css('font-size', '111%')
-      .append(ci_item.id);
+      .append(ci_item._id);
 
   var ci_div = $('<div />')
       .addClass('opt-div copy-id-div')
@@ -655,7 +677,7 @@ function createMoreDiv(type) {
       .text('Get link ID')
       .click(moreBtnHandler);
 
-  if (m_item.user_id === user_id || rel_list[slide_id].linked_by === user_id) {
+  if (m_item.user === username || rel_list[slide_id].linked_by === username) {
     var del_btn = $('<a />')
         .addClass('del-btn')
         .attr('href', '#')
@@ -663,7 +685,7 @@ function createMoreDiv(type) {
         .text('Delete')
         .click(moreBtnHandler);
 
-    if (m_item.user_id === user_id) {
+    if (m_item.user === username) {
       var edit_btn = $('<a />')
           .addClass('edit-btn')
           .attr('href', '#')
@@ -688,7 +710,7 @@ function createMoreDiv(type) {
 
   more_div = $('<div />')
       .addClass('span7 more-div')
-      .append(parents_btn, link_btn, del_btn, edit_btn, close_btn, copy_id_btn);
+      .append(parents_btn, link_btn, del_btn, edit_btn, copy_id_btn, close_btn);
 
   slide.find('.node').append(more_div);
 }
@@ -755,9 +777,9 @@ function shiftSlides(shift_num) {
   //create an empty slide element if we have to add elements to the slide_list
   //checks if the list of slides is smaller than the min number of slides needed for the shift
   //currentPos is always at maximum 2 smaller than the length of the slide_list
-  if (slide_list.length < currentPosition + 2 + shift_num) {
+  //if (slide_list.length < currentPosition + 2 + shift_num) {
     var ele = $('<span />').addClass('span8 node-slide')
-  }
+  //}
   for (var i = 0; i < (currentPosition + 2 + shift_num) - slide_list.length; i++) {
     slide_list.push(ele);
     $('#slideInner').append(ele);
@@ -814,8 +836,8 @@ function displayChild(rel_id, from) {
 {% if nd %}
   var root_node_info = eval({{ nd|tojson|safe }});
   root_node_info.rel = {
-    id: 'root',
-    child: root_node_info.item.id,
+    _id: 'root',
+    child: root_node_info.item._id,
     linked_by: null,
   };
   addNodeInfo(root_node_info);
@@ -854,7 +876,7 @@ $(document).ready(function() {
       from = 'parent';
     }
 
-    disp_id = parseInt($(this).attr('name').split('_')[1], 10);
+    disp_id = $(this).attr('name').split('_')[1];
 
     if (disp_id === child_id) {
       if (!shiftSlides(-1)) return;
@@ -905,23 +927,23 @@ $(document).ready(function() {
     var pr_form = $(this).parent();
     var pr_id = pr_form.parents('.node').attr('id').split('_')[1]
 
-    var pr_title = pr_form.find('input[name="title"]').val();
+    var pr_tldr = pr_form.find('input[name="tldr"]').val();
     var pr_body = pr_form.find('textarea[name="body"]').val();
     var pr_parent = pr_form.find('input[name="parent"]').val();
 
     pr_div = pr_form.parent()
     pr_div.html('Submitting....');
     var URL = "{{ url_for('add_entry') }}";
-    $.post(URL,{user_id: user_id, title: pr_title, body: pr_body, parent: pr_parent, tags: ""}, 
+    $.post(URL,{username: username, tldr: pr_tldr, body: pr_body, parent: pr_parent, tags: ""}, 
     function (data)
     {
-      item_list[data.item.id] = data.item;
-      rel_list[data.rel.id] = data.rel;
+      item_list[data.item._id] = data.item;
+      rel_list[data.rel._id] = data.rel;
       //node_list[slide_id].child_rel_list.push(data.rel.id)
-      user_list[data.user.id] = data.user;
+      //user_list[data.user.name] = data.user;
       from_selector.find('.post-button').text('Reply')
       pr_div.remove();
-      $('#clist-' + pr_id).prepend(createChildElement(data.rel.id));
+      $('#clist-' + pr_id).prepend(createChildElement(data.rel._id));
     });
   });
 

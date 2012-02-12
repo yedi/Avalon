@@ -8,6 +8,8 @@ from flask import Flask, request, session, g, redirect, url_for, abort, \
 DATABASE = 'avalon/tmp/avalon.db'
 DEBUG = True
 SECRET_KEY = "avalon's key"
+MONGODB_HOST = 'localhost'
+MONGODB_PORT = 27017
 
 app = Flask(__name__)
 app.config.from_object(__name__)

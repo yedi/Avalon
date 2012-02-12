@@ -1,222 +1,75 @@
 from avalon import app
-from sqlite3 import dbapi2 as sqlite3
-from contextlib import closing
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash, jsonify
 from datetime import datetime
-
-
-def connect_db():
-    """Returns a new connection to the database."""
-    return sqlite3.connect(app.config['DATABASE'])
-
-
-def init_db():
-    """Creates the database tables."""
-    with closing(connect_db()) as db:
-        with app.open_resource('schema.sql') as f:
-            db.cursor().executescript(f.read())
-        db.commit()
+import db_operations as db
+from bson import ObjectId
+import mongokit
 
 
 @app.before_request
 def before_request():
     """Make sure we are connected to the database each request."""
-    g.db = connect_db()
+    db.init(app.config['MONGODB_HOST'], app.config['MONGODB_PORT'])
 
 
 @app.teardown_request
 def teardown_request(exception):
     """Closes the database again at the end of the request."""
-    if hasattr(g, 'db'):
-        g.db.close()
-
-
-def query_db(query, args=(), one=False):
-    cur = g.db.execute(query, args)
-    rv = [dict((cur.description[idx][0], value)
-               for idx, value in enumerate(row)) for row in cur.fetchall()]
-    return (rv[0] if rv else None) if one else rv
-
-
-def getRel(rel_id=None, parent_id=None, child_id=None):
-    rel = None
-
-    if isinstance(rel_id, (int, long)):
-        rel = query_db('SELECT * FROM relations WHERE id = ?', [rel_id], one=True)
-
-    elif isinstance(parent_id, (int, long)) & isinstance(child_id, (int, long)):
-        rel = query_db('SELECT * FROM relations WHERE parent = ? AND child = ?', [parent_id, child_id], one=True)
-
-    return rel
-
-
-def getItems(item_ids):
-    item_ids = set(item_ids)
-    item_id_string = '(' + ','.join([str(i) for i in item_ids]) + ')'
-    items = query_db('SELECT * FROM items WHERE id in ' + item_id_string)
-    return items
-
-
-def isComment(rel_id):
-    if query_db('SELECT * FROM comments WHERE rel_id = ?', [rel_id], one=True) is None:
-        return False
-    return True
-
-
-def getItemInfo(item_id, given_needs={}):
-    """
-    """
-    needs = {
-        "parent_items": False,
-        "child_items": False,
-        "parent_rels": False,
-        "child_rels": False,
-        'users': False,
-        "comments": False
-    }
-
-    needs.update(given_needs)
-
-    parent_ids = child_ids = parent_items = child_items = parent_rels = child_rels = users = []
-    user_ids = set()
-
-    item = getItems([item_id])[0]
-    item['tags'] = getItemTags(item['id'], True)
-    if item is None:
-        #return {"error": 'No such item'}
-        return None
-
-    if needs["parent_items"] | needs["parent_rels"]:
-        parent_rels = query_db('SELECT * FROM relations WHERE child = ?', [item_id])
-
-    if needs["parent_items"]:
-        parent_ids = set([rel['parent'] for rel in parent_rels])
-        parent_id_string = '(' + ','.join([str(i) for i in parent_ids]) + ')'
-        parent_items = query_db('SELECT * FROM items WHERE id in ' + parent_id_string)
-        for it in parent_items:
-            it['tags'] = getItemTags(it['id'], True)
-
-    if needs["child_items"] | needs["child_rels"]:
-        child_rels = query_db('SELECT * FROM relations WHERE parent = ?', [item_id])
-
-    if needs["comments"] == False:
-        child_rels[:] = [rel for rel in child_rels if not isComment(rel['id'])]
-
-    if needs["child_items"]:
-        child_ids = set([rel['child'] for rel in child_rels])
-        child_id_string = '(' + ','.join([str(i) for i in child_ids]) + ')'
-        child_items = query_db('SELECT * FROM items WHERE id in ' + child_id_string)
-        for it in child_items:
-            it['tags'] = getItemTags(it['id'], True)
-
-    if needs["users"]:
-        #get the user_ids for any linked relations
-        for rel in parent_rels + child_rels:
-            if rel["linked_by"]:
-                user_ids.add(rel["linked_by"])
-
-        user_ids.update(set([item['user_id'] for item in parent_items + child_items + [item]]))
-        user_id_string = '(' + ','.join([str(i) for i in user_ids]) + ')'
-        users = query_db('SELECT * FROM users WHERE id in ' + user_id_string)
-
-    ret_dict = {
-        "item": item,
-        "parent_items": parent_items,
-        "child_items": child_items,
-        "parent_rels": parent_rels,
-        "child_rels": child_rels,
-        "users": users
-    }
-    return ret_dict
-
-
-def getComments(item_id):
-    comments = query_db('SELECT * FROM comments WHERE head_item = ?', [item_id])
-    comment_rels = set([c['rel_id'] for c in comments])
-    comment_rel_string = '(' + ','.join([str(i) for i in comment_rels]) + ')'
-    comment_rels = query_db('SELECT * FROM relations WHERE id in ' + comment_rel_string)
-
-    for comment in comments:
-        comment.update(next(cr for cr in comment_rels if cr['id'] == comment['rel_id']))
-    return comments
-
-
-def getUser(user_id):
-    user = query_db('SELECT * FROM users WHERE id = ?', [user_id], one=True)
-    return user
-
-
-def getTag(tag_name=None, tag_id=None):
-    if tag_name is not None:
-        tag = query_db('SELECT * FROM tags WHERE name = ?', [tag_name], one=True)
-        return tag
-    elif tag_id is not None:
-        tag = query_db('SELECT * FROM tags WHERE id = ?', [tag_id], one=True)
-        return tag
-    else:
-        return None
-
-
-def getItemTags(item_id, name_only=False):
-    tags = query_db('SELECT * FROM tags where id in (SELECT tag FROM tag_relations where item = ?)', [item_id])
-    if name_only:
-        return [tag['name'] for tag in tags]
-    return tags
 
 
 @app.route('/')
 def index():
-    session['current_item'] = 0
+    session['current_item'] = db.root._id
     need = {
-        "users": True,
         "parent_items": True,
         "child_items": True,
         "child_rels": True
     }
-    node_dict = getItemInfo(0, need)
+    node_dict = db.getItemInfo(db.root._id, need, in_json=True)
+    # node_dict['users'][:] = [d['name'] for d in node_dict['users']]
     return render_template('page.html', nd=node_dict, tab='browse-tab')
 
 
-@app.route('/<int:item_id>')
+@app.route('/i/<item_id>')
 def item_page(item_id):
+    item_id = ObjectId(item_id)
     session['current_item'] = item_id
     need = {
-        "users": True,
         "parent_items": True,
         "child_items": True,
         "child_rels": True
     }
-    node_dict = getItemInfo(item_id, need)
-    #lol = breakme
+    node_dict = db.getItemInfo(item_id, need, True)
+    # node_dict['users'][:] = [d['name'] for d in node_dict['users']]
     return render_template('page.html', nd=node_dict, tab='browse-tab')
 
 
 @app.route('/add', methods=['POST'])
 def add_entry():
-    if len(request.form['title']) < 1:
+    if len(request.form['body']) < 1:
         return
 
-    # if session['user_id'] != request.form['user_id']:
-    #     flash('There is an issue with the session. Please login again')
-    #     return redirect(url_for('item_page', item_id=session['current_item']))
-
-    if getUser(request.form['user_id']) is None:
+    if db.getUser(request.form['username']) is None:
         return
 
-    cur = g.db.cursor()
+    body = request.form['body']
+    username = request.form['username']
+    parent_id = ObjectId(request.form['parent'])
 
-    #insert item into item table
-    cur.execute('insert into items (title, body, user_id, time_submitted) values (?, ?, ?, ?)',
-                 [request.form['title'], request.form['body'], request.form['user_id'], datetime.now()])
-    new_item_id = cur.lastrowid
+    #insert item
+    item_dict = {
+        'body': unicode(body),
+        'user': unicode(username),
+    }
+    if request.form['tldr']:
+        item_dict['tldr'] = unicode(request.form['tldr'])
+    new_item = db.addItem(item_dict)
 
-    #insert the relation into the relations tables
-    parent_id = request.form['parent']
-    cur.execute('insert into relations (parent, child) values(?, ?)',
-                 [parent_id, new_item_id])
-    new_rel_id = cur.lastrowid
+    #insert the new rel
+    new_rel = db.addRel(parent_id, new_item._id, username)
 
+    """
     # insert each tag into the tag table if the tag is valid
     tags = request.form['tags']
     if len(tags) > 0:
@@ -225,49 +78,39 @@ def add_entry():
             if tag is None:
                 continue
             cur.execute('insert into tag_relations (item, tag) values (?, ?)', [new_item_id, tag['id']])
-
-    g.db.commit()
+    """
 
     #automatically upvote for the user
-    process_vote(new_rel_id, request.form['user_id'], 'up')
+    db.processVote(new_rel._id, request.form['username'], 'up')
 
     #flash('New entry was successfully posted')
 
     ret_dict = {
-        "item": getItems([new_item_id])[0],
-        "rel": getRel(new_rel_id),
-        "user": getUser(request.form['user_id'])
+        "item": db.prepareForClient([new_item])[0],
+        "rel": db.prepareForClient([db.getRel(new_rel._id)])[0]
     }
-
     return jsonify(ret_dict)
 
 
 @app.route('/addLink', methods=['POST'])
 def addLink():
-    l_item_id, parent_id, user_id = request.form['link_item'], request.form['parent'], request.form['user_id']
-    if (not getItems([l_item_id])[0]) | (not getItems([parent_id])[0]) | (not getUser(user_id)):
-        return "Link error"
+    l_item_id, parent_id, username = ObjectId(request.form['link_item']), ObjectId(request.form['parent']), request.form['username']
+    user, l_item, parent = db.getUser(username), db.getItem(l_item_id), db.getItem(parent_id)
+    if user is None:
+        return "Not a user"
+    if l_item is None or parent is None:
+        return "invalid ids"
 
-    cur = g.db.cursor()
-    cur.execute('insert into relations (parent, child, linked_by, time_linked) values (?, ?, ?, ?)',
-                 [parent_id, l_item_id, user_id, datetime.now()])
-    new_rel_id = cur.lastrowid
-    g.db.commit()
+    new_rel = db.addRel(parent._id, l_item._id, username)
+    db.processVote(new_rel._id, request.form['username'], 'up')
 
-    process_vote(new_rel_id, user_id, 'up')
-
-    #flash('Item (' + str(l_item_id) + ') was successfully linked')
-
-    new_rel = getRel(new_rel_id)
-    rel_child = getItems([new_rel['child']])[0]
-    child_user = getUser(rel_child['user_id'])
+    rel_child = db.getItem(new_rel['child'])
+    # child_user = db.getUser(rel_child['user'])
 
     ret_dict = {
-        "new_rel": new_rel,
-        "rel_child": rel_child,
-        "child_user": child_user
+        "new_rel": db.prepareForClient([db.getRel(new_rel._id)])[0],
+        "rel_child": db.prepareForClient([rel_child])[0]
     }
-
     return jsonify(ret_dict)
 
 
@@ -278,26 +121,13 @@ def register():
         if request.form['password'] != request.form['password_rt']:
             return render_template('register.html', error="Password doesn't match", tab='profile-tab')
 
-        a_user = query_db('SELECT * FROM users WHERE username = ?', [request.form['username']], one=True)
-        if a_user != None:
-            return render_template('register.html', error="Username already exists", tab='profile-tab')
+        user, error = db.addUser(request.form['username'], request.form['email'], request.form['password'])
+        if user:
+            session['logged_in'] = True
+            session['username'] = user.name
 
-        a_email = query_db('SELECT * FROM users where email = ?', [request.form['email']], one=True)
-        if a_user != None:
-            return render_template('register.html', error="Email already exists")
-
-        cur = g.db.cursor()
-        cur.execute('insert into users (username, email, password) values (?, ?, ?)',
-                     [request.form['username'], request.form['email'], request.form['password']])
-        insert_id = cur.lastrowid
-        g.db.commit()
-
-        session['logged_in'] = True
-        session['user_id'] = insert_id
-        session['username'] = request.form['username']
-
-        flash('You were now registered')
-        return redirect(url_for('item_page', item_id=0))
+            flash('You were now registered')
+            return redirect(url_for('item_page', item_id=session['current_item']))
     return render_template('register.html', error=error, tab='profile-tab')
 
 
@@ -305,15 +135,11 @@ def register():
 def login():
     error = None
     if request.method == 'POST':
-        a_user = query_db('SELECT * FROM users WHERE username = ? OR email = ?', [request.form['username'], request.form['username']], one=True)
-        if a_user is None:
-            error = "User doesn't exist in the system"
-        elif request.form['password'] != a_user['password']:
-            error = "Incorrect password: {0}, {1}".format(a_user['password'], request.form['password'])
-        else:
+        user, error = db.authenticateUser(request.form['username'], request.form['password'])
+        if user:
             session['logged_in'] = True
-            session['user_id'] = a_user['id']
-            session['username'] = a_user['username']
+            session['user_id'] = user._id
+            session['username'] = user.name
 
             flash('You were logged in')
             return redirect(url_for('item_page', item_id=session['current_item']))
@@ -323,79 +149,40 @@ def login():
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
+    session.pop('user_id', None)
+    session.pop('username', None)
     flash('You were logged out')
-    return redirect(url_for('item_page', item_id=0))
-
-
-def process_vote(rel_id, user_id, vote_type):
-    if not getUser(user_id):
-        return
-    if vote_type == 'up':
-        is_upvote = True
-    else:
-        is_upvote = False
-
-    upvote_count, downvote_count = 0, 0
-
-    a_vote = query_db('SELECT * FROM votes WHERE rel_id = ? AND user_id = ?', [rel_id, user_id], one=True)
-    if a_vote is None:
-        query_db('INSERT INTO votes (rel_id, user_id, vote_type) VALUES (?, ?, ?)', [rel_id, user_id, vote_type])
-        if is_upvote:
-            upvote_count = 1
-        else:
-            downvote_count = 1
-    else:
-        if a_vote['vote_type'] == vote_type:
-            query_db('DELETE FROM votes WHERE rel_id = ? AND user_id = ?', [rel_id, user_id])
-            if is_upvote:
-                upvote_count = -1
-            else:
-                downvote_count = -1
-        else:
-            query_db('UPDATE votes SET vote_type = ? WHERE rel_id = ? AND user_id = ?', [vote_type, rel_id, user_id])
-            if is_upvote:
-                upvote_count, downvote_count = 1, -1
-            else:
-                downvote_count, upvote_count = 1, -1
-
-    #query_db('UPDATE relations SET ? = ?+1 WHERE id=?', [column, column, rel_id])
-    #query_db('UPDATE relations SET {0} = {0}+1 WHERE id={1}'.format(column, rel_id))
-    query_db('UPDATE relations SET upvotes = upvotes+?, downvotes = downvotes+? WHERE id=?',
-            [upvote_count, downvote_count, rel_id])
-
-    g.db.commit()
-    return upvote_count, downvote_count
+    return redirect(url_for('item_page', item_id=session['current_item']))
 
 
 @app.route('/vote', methods=['POST'])
 def vote():
-    uv_c, dv_c = process_vote(request.form['rel_id'], request.form['user_id'], request.form['vote_type'])
-    # return redirect(url_for('item_page', item_id=session['current_item']))
+    uv_c, dv_c = db.processVote(ObjectId(request.form['rel_id']), request.form['username'], request.form['vote_type'])
     return jsonify(uv_c=uv_c, dv_c=dv_c)
 
 
 @app.route('/grabRel', methods=['POST'])
 def grabRel():
-    rel_id = int(request.form['rel_id'])
+    rel_id = ObjectId(request.form['rel_id'])
     #parent_id = request.form['parent_id']
     #child_id = request.form['child_id']
 
-    rel = getRel(rel_id=rel_id)
+    rel = db.getRel(rel_id=rel_id)
 
     need = {
-        "users": True,
         "parent_items": True,
         "child_items": True,
         "child_rels": True
     }
-    rel['child']
-    child_dict = getItemInfo(rel['child'], need)
-    child_dict['rel'] = rel
+    child_dict = db.getItemInfo(rel['child'], need, True)
+    child_dict['rel'] = db.prepareForClient([rel])[0]
+    #child_dict['users'][:] = [d['name'] for d in child_dict['users']]
     return jsonify(child_dict)
 
 
 @app.route('/grabItem', methods=['POST'])
 def grabItem():
+    """
     need = {
         "users": True,
         "parent_items": True,
@@ -405,10 +192,12 @@ def grabItem():
 
     item_dict = getItemInfo(request.form['item_id'], need)
     return jsonify(item_dict)
+    """
 
 
 @app.route('/view/<int:item_id>')
 def viewItem(item_id):
+    """
     session['current_item'] = item_id
     need = {
         "users": True,
@@ -425,10 +214,12 @@ def viewItem(item_id):
     item_info['users'].extend([getUser(uid) for uid in user_ids])
 
     return render_template('view.html', ii=item_info, tab='view-tab')
+    """
 
 
 @app.route('/postComment', methods=['POST'])
 def postComment():
+    """
     # if session['user_id'] != request.form['user_id']:
     #     return 'There is an issue with the session. Please login again.--' + str(session['user_id']) + '|' + str(request.form['user_id']) + "/n" + str(type(session['user_id'])) + '|' + str(type(request.form['user_id']))
 
@@ -467,10 +258,12 @@ def postComment():
     }
 
     return jsonify(ret_dict)
+    """
 
 
 @app.route('/deleteItem', methods=['POST'])
 def deleteItem():
+    """
     item = getItems([request.form['item_id']])[0]
     user = getUser(request.form['user_id'])
 
@@ -483,41 +276,47 @@ def deleteItem():
     cur.execute('delete from tag_relations where item = ?', [item['id']])
     g.db.commit()
     return "delete successful"
+    """
 
 
 @app.route('/deleteRel', methods=['POST'])
 def deleteRel():
-    rel = getRel(rel_id=int(request.form['rel_id']))
-    #return str(type(request.form['rel_id']))
-    user = getUser(request.form['user_id'])
+    rel_id = ObjectId(request.form['rel_id'])
+    username = request.form['username']
 
-    # if user is None or rel is None:
-    #     return "Not deleted"
+    if db.getRel(rel_id).linked_by != unicode(username):
+        return "Not deleted"
 
-    # if rel['linked_by'] != user['id']:
-    #     return "Not deleted"
-
-    cur = g.db.cursor()
-    cur.execute('delete from relations where id = ?', [rel['id']])
-    g.db.commit()
+    db.deleteRel(rel_id)
     return "delete successful"
 
 
 @app.route('/editItem', methods=['POST'])
 def editItem():
-    item = getItems([request.form['item_id']])[0]
-    user = getUser(request.form['user_id'])
+    item_id = ObjectId(request.form['item_id'])
+    username = request.form['username']
 
-    if item['user_id'] != user['id']:
-        return "Not deleted"
+    if db.getItem(item_id).user != unicode(username):
+        return "Not edited"
+    new_item = db.editItem(item_id, request.form['body'], request.form['tldr'])
 
-    cur = g.db.cursor()
-    cur.execute('UPDATE items SET title = ?, body = ? WHERE id = ?', 
-                [request.form['title'], request.form['body'], item['id']])
-    g.db.commit()
-    return jsonify(getItems([item['id']])[0])
+    return jsonify(db.prepareForClient([new_item])[0])
 
 
 @app.route('/about')
 def aboutPage():
+    """
     return render_template('about.html', tab='about-tab')
+    """
+
+
+@app.route('/discover')
+def discoverPage():
+    """
+    rels = query_db("SELECT * FROM relations ORDER BY time_linked DESC")
+    rel_items = set([rel['child'] for rel in rels])
+        child_id_string = '(' + ','.join([str(i) for i in child_ids]) + ')'
+        child_items = query_db('SELECT * FROM items WHERE id in ' + child_id_string)
+    return render_template('discover.html')
+
+"""

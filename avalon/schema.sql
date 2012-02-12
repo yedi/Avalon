@@ -19,8 +19,8 @@ create table relations (
   child integer not null,
   upvotes integer DEFAULT (0) not null,
   downvotes integer DEFAULT (0) not null,
-  linked_by integer DEFAULT (null),
-  time_linked datetime DEFAULT (null),
+  linked_by integer not null,
+  time_linked datetime DEFAULT (DATETIME('now')) not null,
   foreign key(parent) references item(id),
   foreign key(child) references item(id),
   foreign key(linked_by) references users(id)

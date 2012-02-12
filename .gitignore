@@ -3,3 +3,5 @@
 *.db
 *.ppk
 extra/*
+avalon/views_old.py
+*.dbshell
