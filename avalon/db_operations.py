@@ -206,7 +206,7 @@ def addRel(parent, child, linked_by, comment_parent=None):
     return rel
 
 
-def addUser(username, email, password):
+def addUser(username, email, password, dr=None):
     if getUser(username):
         return None, 'This username is taken, please try another.'
     if dbcon.users.User.find_one({'email': unicode(email)}):
@@ -224,6 +224,8 @@ def addUser(username, email, password):
         'password': password,
         'item': user_item
     })
+    if dr:
+        user.date_registered = dr
     user.save()
     return user, 'Success'
 
@@ -296,8 +298,9 @@ def processVote(rel_id, username, vote_type):
 
 
 def createInitialDb():
+    connection.drop_database(cur_db)
     #create admin user
-    admin = addUser('admin', 'yedispaghetti@gmail.com', 'change_this')
+    admin, error = addUser('admin', 'yedispaghetti@gmail.com', 'change_this')
 
     if admin is None:
         return
@@ -313,6 +316,6 @@ def createInitialDb():
 
     ret_dict = {
         'root_id': root_item._id,
-        'admin_id': admin._id
+        'admin': admin.name
     }
     return ret_dict

@@ -103,7 +103,7 @@ function createCommentElement(rel_id) {
 
   var user_link = $('<a />')
       .addClass('comment-user')
-      .text(rel.user);
+      .text(rel.linked_by);
 
   var votecount = $('<span />')
       .addClass('comment-vc')
@@ -261,11 +261,11 @@ $(document).ready(function() {
   <h2>View Page</h2>
 
   <div id="item-info">
-    <div id="item-title">
-      {{ ii['item']['title'] }}
-    </div>
     <div id="item-body">
       {{ ii['item']['body'] }}
+    </div>
+    <div id="item-tldr">
+      <b>tldr: </b>{{ ii['item']['tldr'] }}
     </div>
     <br />
     All <span style="font-weight:bold;">{{ ii['comment_rels']|length }}</span> comments

@@ -10,7 +10,7 @@ import mongokit
 @app.before_request
 def before_request():
     """Make sure we are connected to the database each request."""
-    db.init(app.config['MONGODB_HOST'], app.config['MONGODB_PORT'])
+    db.init(app.config['MONGODB_HOST'], app.config['MONGODB_PORT'], 'conversion')
 
 
 @app.teardown_request

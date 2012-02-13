@@ -154,10 +154,17 @@ function createNodeElement(rel_id) {
         .append(vote_element('up'), vote_element('down'), vc_num);
   }
 
-  var node_tldr = $('<span />')
-      .addClass('node-tldr span7')
-      //.append(vote_element('up'), votecount, tldr, vote_element('down'));
-      .append(votecount, item.tldr);
+  var node_tldr = ""
+  if (item.tldr !== "") {
+    var tldr_tag = $('<span />')
+        .addClass('node-tldr-tag')
+        .append('tldr:')
+
+    var node_tldr = $('<span />')
+        .addClass('node-tldr span7')
+        //.append(vote_element('up'), votecount, tldr, vote_element('down'));
+        .append(tldr_tag, item.tldr);
+  }
 
   var disc_link = $('<a />')
       .addClass('disc-link')
@@ -210,7 +217,7 @@ function createNodeElement(rel_id) {
       .addClass('node')
       .attr('id', 'n_' + rel._id)
       //.append(node_tldr, body, tags_div, node_footer);
-      .append(node_tldr, body, node_footer);
+      .append(votecount, body, node_tldr, node_footer);
 
   return node_element;
 }
@@ -222,18 +229,13 @@ function createChildElement(rel_id, type) {
   var rel = rel_list[rel_id];
   var item = item_list[rel.child];
 
+  var new_tldr = item.tldr;
+  if (new_tldr === "") {
+    new_tldr = item.body.substr(0, 50);
+  }
   var tldr = $('<div />')
       .addClass('child-tldr span7')
-      .text(item.tldr);
-
-  var tldr_link = $('<a />')
-      .addClass('child-link')
-      .attr('name', 'cl_' + rel_id)
-      .attr('href', '#')
-      .attr('onclick', "return false;")
-      //.click(displayChild(rel._id, 'child'))
-      //.click(function(){displayChild(rel._id, this)})
-      .append(tldr);
+      .text(new_tldr);
 
   var body = $('<div />')
       .addClass('child-body span7')
@@ -246,13 +248,27 @@ function createChildElement(rel_id, type) {
   var tldr_body = $('<span />')
       //.css({"display": "block", "float": "left"})
       .addClass('child-content')
-      .append(tldr_link, body);
+      .append(tldr/*, body*/);
+
+  var child_link = $('<a />')
+      .addClass('child-link')
+      .attr('name', 'cl_' + rel_id)
+      .attr('href', '#')
+      .attr('onclick', "return false;")
+      //.click(displayChild(rel._id, 'child'))
+      //.click(function(){displayChild(rel._id, this)})
+      .append(tldr_body)
+      .on('hover', function() {
+        $(this).parent().addClass('hover-hl')
+      }, function() {
+        $(this).parent().removeClass('hover-hl')
+      });
 
   var child_element = $('<li />')
       .addClass('child')
       .attr('id', 'c_' + rel._id)
       //.text(rel.upvotes - rel.downvotes)
-      .append(votecount, tldr_body);
+      .append(votecount, child_link);
 
   return child_element;
 }
@@ -283,7 +299,7 @@ function createPostDiv(type) {
   var slide_id = (type === 'parent')?parent_id:child_id;
   var item_id = rel_list[slide_id].child;
 
-  var tldr_label = $('<label />').text('tldr:');
+  var tldr_label = $('<label />').html('tldr: <span class="tldr-msg">(Not required)</span>');
   var tldr_input = $('<input />')
       .addClass('span7')
       .attr('type', 'text')
@@ -322,7 +338,7 @@ function createPostDiv(type) {
 
   var post_form = $('<div />')
       .addClass('form-stacked')
-      .append(tldr_input, body_input, parent_input, post_button);
+      .append(body_input, tldr_input, parent_input, post_button);
 
   var post_div = $('<span />')
       .addClass('post-div')
