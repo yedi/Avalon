@@ -73,6 +73,9 @@ def transfer():
         item_lookup[li['id']] = i
 
     for lr in lite_rels:
+        print lr.get('time_submitted', "no time")
+        #tl = datetime.strptime(lr['time_linked'].split('.')[0], '%Y-%m-%d %H:%M:%S')
+
         if lr['parent'] == 0:
             rp = mon.root._id
         else:
@@ -92,6 +95,7 @@ def transfer():
         r = mon.addRel(rp, rc, lb)
         r.upvotes = lr['upvotes']
         r.downvotes = lr['downvotes']
+        # r.time_linked = tl
         r.save()
         print 'inserted rels: ' + str(lr['id']) + ' -- ' + str(r)
         rel_lookup[lr['id']] = r

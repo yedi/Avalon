@@ -66,6 +66,23 @@ def viewItem(item_id):
     return render_template('view.html', ii=item_info, tab='view-tab')
 
 
+@app.route('/discover')
+def discoverPage():
+    new_rels = list(db.dbcon.relations.Relation.find({
+            'comment_parent': None
+        }).sort('time_linked', -1).limit(10))
+
+    new_com_rels = list(db.dbcon.relations.Relation.find({
+            'comment_parent': {"$ne": None}
+        }).sort('time_linked', -1).limit(10))
+
+    new_dict = {
+        'new_rels': db.prepareForClient(new_rels),
+        'new_com_rels': db.prepareForClient(new_com_rels)
+    }
+    return render_template('discover.html', nd=new_dict, tab='view-tab')
+
+
 @app.route('/add', methods=['POST'])
 def add_entry():
     if len(request.form['body']) < 1:
@@ -309,15 +326,3 @@ def aboutPage():
     """
     return render_template('about.html', tab='about-tab')
     """
-
-
-@app.route('/discover')
-def discoverPage():
-    """
-    rels = query_db("SELECT * FROM relations ORDER BY time_linked DESC")
-    rel_items = set([rel['child'] for rel in rels])
-        child_id_string = '(' + ','.join([str(i) for i in child_ids]) + ')'
-        child_items = query_db('SELECT * FROM items WHERE id in ' + child_id_string)
-    return render_template('discover.html')
-
-"""

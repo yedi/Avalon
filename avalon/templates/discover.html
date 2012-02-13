@@ -1,4 +1,34 @@
 {% extends "layout.html" %}
-{% block body %}
+{% block header %}
+<script type="text/javascript" language="javascript">
+new_rels = [];
+new_com_rels = [];
 
+{% if nd %}
+  var nd = eval({{ nd|tojson|safe }});
+  var new_rels = nd.new_rels;
+  var new_com_rels = nd.new_com_rels;
+{% endif %}
+</script>
+<script type="text/javascript" language="javascript">
+//DOCUMENT READY ==============================================================
+$(document).ready(function() {
+var $np = $('#new-posts');
+var $nc = $('#new-comments');
+    for (var i = 0; i < new_rels.length; i++) {
+        $np.append('<a href="/i/' + new_rels[i].parent + '"><span class="new-post">'+ new_rels[i].linked_by +' posted an item on ' + new_rels[i].time_linked + '</div></a><br />');
+    }
+    for (var i = 0; i < new_com_rels.length; i++) {
+        $nc.append('<a href="/view/' + new_com_rels[i].comment_parent + '"><span class="new-comment">'+ new_com_rels[i].linked_by +' posted a comment on ' + new_com_rels[i].time_linked + '</div></a><br />');
+    }
+});
+</script>
+{% endblock %}
+{% block body %}
+<span id='new-posts'>
+    <h3>Most recent posts</h3>
+</span><br />
+<span id='new-comments'>
+    <h3>Most recent comments</h3>
+</span>
 {% endblock %}

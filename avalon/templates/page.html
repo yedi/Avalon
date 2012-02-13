@@ -155,7 +155,7 @@ function createNodeElement(rel_id) {
   }
 
   var node_tldr = ""
-  if (item.tldr !== "") {
+  if (!(item.tldr === "" || !(item.tldr))) {
     var tldr_tag = $('<span />')
         .addClass('node-tldr-tag')
         .append('tldr:')
@@ -230,7 +230,7 @@ function createChildElement(rel_id, type) {
   var item = item_list[rel.child];
 
   var new_tldr = item.tldr;
-  if (new_tldr === "") {
+  if (new_tldr === "" || !(new_tldr)) {
     new_tldr = item.body.substr(0, 50);
   }
   var tldr = $('<div />')
