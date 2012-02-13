@@ -475,6 +475,15 @@ function deleteRel(d_rel_id, cb_func) {
   });
 }
 
+function subscribeToItem(s_item_id, cb_func) {
+  var URL = "{{ url_for('subscribeToItem') }}";
+  $.post(URL,{username: username, item_id: s_item_id}, 
+  function (data)
+  {
+    cb_func();
+  });
+}
+
 function removeItemsFromArray(array, loi) {
   var i = 0;
   var removedany = false;
@@ -560,6 +569,44 @@ function createDeleteDiv(type) {
   var del_div = $('<div />')
       .addClass('opt-div del-div')
       .append('Are you sure you want to delete this item? <br />', yes_btn, no_btn);
+
+  return del_div;
+}
+
+/*
+ * creates the subscribe div for a node
+ */
+function createSubDiv(type) {
+  var slide = $('#' + type + '-node');
+  var slide_id = (type === 'parent')?parent_id:child_id;
+  var d_item = item_list[rel_list[slide_id].child];
+  var d_parent = item_list[rel_list[slide_id].parent];
+
+  var yes_btn = $('<button />')
+      .addClass('btn')
+      .css('margin-right', '20px')
+      .text('Yes')
+      .click(function() {
+        $tp = $(this).parent();
+        $tp.html("Subscribing...");
+        subscribeToItem(d_item._id, function() {
+          // slide.html("This link was deleted");
+          //removeItemLocally(d_item._id);
+          alert("You are now subscribed to this item.\n Now you can see new posts and comments to this item in your profile page.");
+          $tp.hide('fast');
+        });
+      });
+
+  var no_btn = $('<button />')
+      .addClass('btn')
+      .text('No')
+      .click(function() {
+        $(this).parent().hide('fast');
+      });
+
+  var del_div = $('<div />')
+      .addClass('opt-div subscribe-div')
+      .append('Are you sure you want to subscribe to this item? <br />', yes_btn, no_btn);
 
   return del_div;
 }
@@ -655,9 +702,9 @@ function createMoreDiv(type) {
     }
 
     var md = $(this).parent();
-    var buttons = ['parents-btn', 'link-btn', 'del-btn', 'edit-btn', 'copy-id-btn'];
-    var divs = ['.parents-div', '.link-div', '.del-div', '.edit-div', '.copy-id-div'];
-    var funcs = [createParentsDiv, createLinkDiv, createDeleteDiv, createEditDiv, createCIDiv];
+    var buttons = ['parents-btn', 'link-btn', 'del-btn', 'edit-btn', 'copy-id-btn', 'subscribe-btn'];
+    var divs = ['.parents-div', '.link-div', '.del-div', '.edit-div', '.copy-id-div', 'subscribe-div'];
+    var funcs = [createParentsDiv, createLinkDiv, createDeleteDiv, createEditDiv, createCIDiv, createSubDiv];
 
     var idof = buttons.indexOf($(this).attr('class'));
     if (idof === -1) return;
@@ -693,6 +740,13 @@ function createMoreDiv(type) {
       .text('Get link ID')
       .click(moreBtnHandler);
 
+  var subscribe_btn = $('<a />')
+      .addClass('subscribe-btn')
+      .attr('href', '#')
+      .attr('onclick', 'return false;')
+      .text('Subscribe')
+      .click(moreBtnHandler);
+
   if (m_item.user === username || rel_list[slide_id].linked_by === username) {
     var del_btn = $('<a />')
         .addClass('del-btn')
@@ -726,7 +780,7 @@ function createMoreDiv(type) {
 
   more_div = $('<div />')
       .addClass('span7 more-div')
-      .append(parents_btn, link_btn, del_btn, edit_btn, copy_id_btn, close_btn);
+      .append(parents_btn, link_btn, del_btn, edit_btn, copy_id_btn, subscribe_btn, close_btn);
 
   slide.find('.node').append(more_div);
 }

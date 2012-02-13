@@ -1,0 +1,57 @@
+{% extends "layout.html" %}
+{% block header %}
+<script type="text/javascript" language="javascript">
+new_rels = [];
+new_com_rels = [];
+
+{% if nd %}
+  var nd = eval({{ nd|tojson|safe }});
+  var new_rels = nd.new_rels;
+  var new_com_rels = nd.new_com_rels;
+  var s_rels = nd.s_rels;
+  var s_com_rels = nd.s_com_rels;
+  var item_list = {};
+  for (var i = 0; i < nd.items.length; i++) {
+    item_list[nd.items[i]._id] = nd.items[i];
+  }
+{% endif %}
+</script>
+<script type="text/javascript" language="javascript">
+//DOCUMENT READY ==============================================================
+$(document).ready(function() {
+  var $sp = $('#s-posts');
+  var $sc = $('#s-comments');
+  var srel = {};
+  var screl = {};
+  for (var i = 0; i < s_rels.length; i++) {
+    srel = s_rels[i];
+    $sp.append('<span class="s-post"><a href="/u/' + srel.linked_by + '/item">'+ srel.linked_by +'<a /> posted an item to <a href="/i/' + srel.parent + '">' + getDisplay(item_list[srel.parent]) + '</a>. -- ' + srel.time_linked + '</span><br />');
+  }
+  for (var i = 0; i < s_com_rels.length; i++) {
+    screl = s_com_rels[i];
+      $sc.append('<span class="s-comment"><a href="/u/' + srel.linked_by + '/item">'+ screl.linked_by +'<a /> posted a comment to <a href="/view/' + screl.comment_parent + '">' + getDisplay(item_list[screl.comment_parent]) + '</a>. -- ' + screl.time_linked + '</div><br />');
+  }
+  // var $np = $('#new-posts');
+  // var $nc = $('#new-comments');
+  // var nrel = {};
+  // var ncrel = {};
+  // for (var i = 0; i < new_rels.length; i++) {
+  //   nrel = new_rels[i];
+  //   $np.append('<span class="new-post"><a href="/u/' + nrel.linked_by + '/item">'+ nrel.linked_by +'<a /> posted an item to <a href="/i/' + nrel.parent + '">' + getDisplay(item_list[nrel.parent]) + '</a>. -- ' + nrel.time_linked + '</span><br />');
+  // }
+  // for (var i = 0; i < new_com_rels.length; i++) {
+  //   ncrel = new_com_rels[i];
+  //     $nc.append('<span class="new-comment"><a href="/u/' + nrel.linked_by + '/item">'+ ncrel.linked_by +'<a /> posted a comment to <a href="/view/' + ncrel.comment_parent + '">' + getDisplay(item_list[ncrel.comment_parent]) + '</a>. -- ' + ncrel.time_linked + '</div><br />');
+  // }
+});
+</script>
+{% endblock %}
+{% block body %}
+<h2>Your subscriptions:</h2>
+<span id='s-posts'>
+    <h3>New posts</h3>
+</span><br />
+<span id='s-comments'>
+    <h3>New comments</h3>
+</span>
+{% endblock %}

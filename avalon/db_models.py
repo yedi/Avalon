@@ -1,4 +1,4 @@
-from mongokit import Document
+from mongokit import Document, DocumentMigration
 from bson import ObjectId
 from datetime import datetime
 
@@ -84,6 +84,16 @@ class Relation(Document):
         return '<rel %r>' % (self._id)
 
 
+class UserMigration(DocumentMigration):
+    def migration01__add_links_field(self):
+        self.target = {'links': {'$exists': False}}
+        self.update = {'$set': {'links': []}}
+
+    def migration01__add_subscriptions_field(self):
+        self.target = {'subscriptions': {'$exists': False}}
+        self.update = {'$set': {'subscriptions': []}}
+
+
 class User(Document):
     __collection__ = 'users'
     structure = {
@@ -127,6 +137,7 @@ class User(Document):
     use_dot_notation = True
     required_fields = ['name', 'email', 'password', 'date_registered', 'acc_activated', 'item']
     default_values = {'date_registered': datetime.now, 'acc_activated': False}
+    migration_handler = UserMigration
 
     def __repr__(self):
         return '<User %r>' % (self.name)

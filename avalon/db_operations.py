@@ -159,16 +159,25 @@ def deleteRel(rel_id):
     dbcon.relations.remove({'_id': rel_id})
 
 
-def getChildRels(parent_id):
-    return list(connection[cur_db].relations.Relation.find({'parent': parent_id}))
+def getChildRels(parent_id, q_dict=None):
+    query = {'parent': parent_id}
+    if q_dict:
+        query.update(q_dict)
+    return list(connection[cur_db].relations.Relation.find(query))
 
 
-def getParentRels(child_id):
-    return list(connection[cur_db].relations.Relation.find({'child': child_id}))
+def getParentRels(child_id, q_dict=None):
+    query = {'child': child_id}
+    if q_dict:
+        query.update(q_dict)
+    return list(connection[cur_db].relations.Relation.find(query))
 
 
-def getCommentRels(item_id):
-    return list(connection[cur_db].relations.Relation.find({'comment_parent': item_id}))
+def getCommentRels(item_id, q_dict=None):
+    query = {'comment_parent': item_id}
+    if q_dict:
+        query.update(q_dict)
+    return list(connection[cur_db].relations.Relation.find(query))
 
 
 def getUser(username):
@@ -301,12 +310,54 @@ def processVote(rel_id, username, vote_type):
 
 
 def subscribe(username, item_id, comments=True):
+    if isSubscribed(username, item_id):
+        return
     user = getUser(username)
     user.subscriptions.append({
         'item': item_id,
-        'comments': comments
+        'comments': comments,
+        'seen': datetime.now(),
+        'comment_seen': datetime.now()
     })
     user.save()
+
+
+def getSubscriptions(username):
+    user = getUser(username)
+    if not hasattr(user, 'subscriptions'):
+        return None
+    return [s for s in user.subscriptions]
+
+
+def isSubscribed(username, item_id):
+    user = getUser(username)
+    if hasattr(user, 'subscriptions'):
+        for s in user.subscriptions:
+            if s['item'] == item_id:
+                return True
+    return False
+
+
+def markSeen(username, item_id, comment=False):
+    if not isSubscribed(username, item_id):
+        return
+    seen = 'seen'
+    if comment:
+        seen = 'comment_seen'
+    user = getUser(username)
+    for i, s in enumerate(user.subscriptions):
+        if s['item'] == item_id:
+            user.subscriptions[i][seen] = datetime.now()
+    user.save()
+
+
+def test(usr='nkessel'):
+    usr = getUser(usr)
+    for i, s in enumerate(usr.subscriptions):
+        print i
+        print s
+        if s['item '] == 0:
+            usr.subscriptions[i]['seen'] = datetime.now()
 
 
 def createInitialDb():
@@ -328,6 +379,6 @@ def createInitialDb():
 
     ret_dict = {
         'root_id': root_item._id,
-        'admin': admin.name
+        'admin': admin.name,
     }
     return ret_dict

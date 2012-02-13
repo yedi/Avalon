@@ -1,16 +1,18 @@
 from avalon import app
 from flask import Flask, request, session, g, redirect, url_for, abort, \
      render_template, flash, jsonify
-from datetime import datetime
 import db_operations as db
 from bson import ObjectId
-import mongokit
 
 
 @app.before_request
 def before_request():
     """Make sure we are connected to the database each request."""
     db.init(app.config['MONGODB_HOST'], app.config['MONGODB_PORT'], 'conversion')
+    try:
+        session['logged_in']
+    except(KeyError):
+        session['logged_in'] = False
 
 
 @app.teardown_request
@@ -20,15 +22,7 @@ def teardown_request(exception):
 
 @app.route('/')
 def index():
-    session['current_item'] = db.root._id
-    need = {
-        "parent_items": True,
-        "child_items": True,
-        "child_rels": True
-    }
-    node_dict = db.getItemInfo(db.root._id, need, in_json=True)
-    # node_dict['users'][:] = [d['name'] for d in node_dict['users']]
-    return render_template('page.html', nd=node_dict, tab='browse-tab')
+    return item_page(db.root._id)
 
 
 @app.route('/i/<item_id>')
@@ -44,6 +38,10 @@ def item_page(item_id):
     }
     node_dict = db.getItemInfo(item_id, need, True)
     # node_dict['users'][:] = [d['name'] for d in node_dict['users']]
+
+    if session['logged_in']:
+        db.markSeen(session['username'], item_id)
+
     return render_template('page.html', nd=node_dict, tab='browse-tab')
 
 
@@ -62,6 +60,9 @@ def viewItem(item_id):
     item_info['comment_rels'] = db.getCommentRels(item_id)
     item_info['comment_items'] = db.prepareForClient([db.getItem(rel['child']) for rel in item_info['comment_rels']])
     item_info['comment_rels'] = db.prepareForClient(item_info['comment_rels'])
+
+    if session['logged_in']:
+        db.markSeen(session['username'], item_id, True)
 
     return render_template('view.html', ii=item_info, tab='view-tab')
 
@@ -84,6 +85,50 @@ def discoverPage():
         'items': db.prepareForClient(items)
     }
     return render_template('discover.html', nd=new_dict, tab='view-tab')
+
+
+@app.route('/profile')
+def myProfilePage():
+    if not session['logged_in']:
+        return 'You are not logged in'
+    subscriptions = db.getSubscriptions(session['username'])
+    if subscriptions is None:
+        return 'You have no subscriptions'
+
+    s_rels, s_com_rels = [], []
+    s_item_ids, s_com_item_ids = [], []
+
+    for s in subscriptions:
+        s_item_ids.append(s['item'])
+        s_rels.extend(db.getChildRels(s['item'], {
+            'comment_parent': None,
+            'time_linked': {'$gte': s['seen']},
+        }))
+        if s['comments']:
+            s_com_item_ids.append(s['item'])
+            s_com_rels.extend(db.getCommentRels(s['item'], {
+                'time_linked': {'$gte': s['comment_seen']}
+            }))
+
+    new_rels = list(db.dbcon.relations.Relation.find({
+            'parent': {'$in': s_item_ids},
+            'comment_parent': None,
+        }).sort('time_linked', -1).limit(10))
+
+    new_com_rels = list(db.dbcon.relations.Relation.find({
+            'comment_parent': {'$in': s_com_item_ids}
+        }).sort('time_linked', -1).limit(10))
+
+    items = set([db.getItem(rel.parent) for rel in new_rels + s_rels])
+    items.update([db.getItem(rel.comment_parent) for rel in new_com_rels + s_com_rels])
+    new_dict = {
+        's_rels': db.prepareForClient(s_rels),
+        's_com_rels': db.prepareForClient(s_com_rels),
+        'new_rels': db.prepareForClient(new_rels),
+        'new_com_rels': db.prepareForClient(new_com_rels),
+        'items': db.prepareForClient(items)
+    }
+    return render_template('profile.html', nd=new_dict, tab='view-tab')
 
 
 @app.route('/add', methods=['POST'])
@@ -183,7 +228,9 @@ def login():
             session['username'] = user.name
 
             flash('You were logged in')
-            return redirect(url_for('item_page', item_id=session['current_item']))
+            # return redirect(url_for('item_page', item_id=session['current_item']))
+            return redirect(url_for('myProfilePage'))
+
     return render_template('login.html', error=error, tab='profile-tab')
 
 
@@ -218,6 +265,10 @@ def grabRel():
     child_dict = db.getItemInfo(rel['child'], need, True)
     child_dict['rel'] = db.prepareForClient([rel])[0]
     #child_dict['users'][:] = [d['name'] for d in child_dict['users']]
+
+    if session['logged_in']:
+        db.markSeen(session['username'], rel['child'], True)
+
     return jsonify(child_dict)
 
 
@@ -310,6 +361,15 @@ def deleteRel():
 
     db.deleteRel(rel_id)
     return "delete successful"
+
+
+@app.route('/subscribeToItem', methods=['POST'])
+def subscribeToItem():
+    item_id = ObjectId(request.form['item_id'])
+    username = request.form['username']
+
+    db.subscribe(username, item_id)
+    return "subscribe successful"
 
 
 @app.route('/editItem', methods=['POST'])
