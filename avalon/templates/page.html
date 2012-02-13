@@ -185,8 +185,8 @@ function createNodeElement(rel_id) {
 
   var by_user = $('<a />')
       .addClass('by-user')
-      .attr('href', '#')
-      .attr('onclick', 'return false')
+      .attr('href', 'u/' + item.user + '/item')
+      //.attr('onclick', 'return false')
       .text(item.user);
 
   var mi_button = $('<a />')
@@ -229,13 +229,13 @@ function createChildElement(rel_id, type) {
   var rel = rel_list[rel_id];
   var item = item_list[rel.child];
 
-  var new_tldr = item.tldr;
-  if (new_tldr === "" || !(new_tldr)) {
-    new_tldr = item.body.substr(0, 50);
-  }
+  // var new_tldr = item.tldr;
+  // if (new_tldr === "" || !(new_tldr)) {
+  //   new_tldr = item.body.substr(0, 50);
+  // }
   var tldr = $('<div />')
       .addClass('child-tldr span7')
-      .text(new_tldr);
+      .text(getDisplay(item, 48));
 
   var body = $('<div />')
       .addClass('child-body span7')
@@ -360,7 +360,7 @@ function createParentsDiv(type) {
         .attr('href', '/i/' + item_id)
         //.attr('onclick', 'return false;')
         .addClass('parent-link')
-        .text(item_list[item_id].tldr)
+        .text(getDisplay(item_list[item_id]))
         // .click(function() {
         //   var sl = slide_list.length;
         //   var sliceammount = sl - currentPosition;
@@ -613,7 +613,7 @@ function createEditDiv(type) {
   var post_form = $('<div />')
       .addClass('form-stacked')
       .css('padding', '0px')
-      .append(tldr_input, body_input, post_button);
+      .append(body_input, tldr_input, post_button);
 
   var edit_div = $('<div />')
       .addClass('opt-div edit-div')

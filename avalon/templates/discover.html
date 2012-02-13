@@ -8,6 +8,10 @@ new_com_rels = [];
   var nd = eval({{ nd|tojson|safe }});
   var new_rels = nd.new_rels;
   var new_com_rels = nd.new_com_rels;
+  var item_list = {};
+  for (var i = 0; i < nd.items.length; i++) {
+    item_list[nd.items[i]._id] = nd.items[i];
+  }
 {% endif %}
 </script>
 <script type="text/javascript" language="javascript">
@@ -15,11 +19,15 @@ new_com_rels = [];
 $(document).ready(function() {
 var $np = $('#new-posts');
 var $nc = $('#new-comments');
+var nrel = {};
+var ncrel = {};
     for (var i = 0; i < new_rels.length; i++) {
-        $np.append('<a href="/i/' + new_rels[i].parent + '"><span class="new-post">'+ new_rels[i].linked_by +' posted an item on ' + new_rels[i].time_linked + '</div></a><br />');
+      nrel = new_rels[i];
+      $np.append('<span class="new-post"><a href="/u/' + nrel.linked_by + '/item">'+ nrel.linked_by +'<a /> posted an item to <a href="/i/' + nrel.parent + '">' + getDisplay(item_list[nrel.parent]) + '</a>. -- ' + nrel.time_linked + '</span><br />');
     }
     for (var i = 0; i < new_com_rels.length; i++) {
-        $nc.append('<a href="/view/' + new_com_rels[i].comment_parent + '"><span class="new-comment">'+ new_com_rels[i].linked_by +' posted a comment on ' + new_com_rels[i].time_linked + '</div></a><br />');
+      ncrel = new_com_rels[i];
+        $nc.append('<span class="new-comment"><a href="/u/' + nrel.linked_by + '/item">'+ ncrel.linked_by +'<a /> posted a comment to <a href="/view/' + ncrel.comment_parent + '">' + getDisplay(item_list[ncrel.comment_parent]) + '</a>. -- ' + ncrel.time_linked + '</div><br />');
     }
 });
 </script>

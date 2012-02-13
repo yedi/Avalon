@@ -5,6 +5,7 @@
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='bootstrap') }}/lib/bootstrap.less">
 <link rel="stylesheet/less" type="text/css" href="{{ url_for('static', filename='avalon.less') }}">
 <script type="text/javascript" src="{{ url_for('static', filename='jquery-1.7.js') }}"> </script>
+<script type="text/javascript" src="{{ url_for('static', filename='avalon.js') }}"></script>
 <script type="text/javascript" language="javascript">
 // $(document).ready(function() {
 //   $('#{{ tab }}').addClass('active');
@@ -28,7 +29,7 @@
       </span>
    <ul >
         <a href="{{ url_for('index') }}"><li id="browse-tab">Browse</li></a>
-        <a href="/discover><li id="about-tab">Discover</li></a>
+        <a href="/discover"><li id="about-tab">Discover</li></a>
         <!--<a href="#" onclick="return false;"><li id="view-tab">View</li></a>
         <a href="#" onclick="return false;"><li id="profile-tab">Profile</li></a>-->
         <a href="/i/4f3871c0af078868ac0000bb"><li id="about-tab">Feedback</li></a>

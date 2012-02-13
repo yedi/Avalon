@@ -189,6 +189,8 @@ def addItem(item_dict):
     item = connection[cur_db].items.Item()
     item.update(item_dict)
     item.save()
+    # user = getUser(item.user)
+    # addRel(user.item, item._id)
     return item
 
 
@@ -203,6 +205,7 @@ def addRel(parent, child, linked_by, comment_parent=None):
     if comment_parent:
         rel.comment_parent = comment_parent
     rel.save()
+    subscribe(rel.linked_by, rel.child)
     return rel
 
 
@@ -295,6 +298,15 @@ def processVote(rel_id, username, vote_type):
     rel.save()
 
     return upvote_count, downvote_count
+
+
+def subscribe(username, item_id, comments=True):
+    user = getUser(username)
+    user.subscriptions.append({
+        'item': item_id,
+        'comments': comments
+    })
+    user.save()
 
 
 def createInitialDb():

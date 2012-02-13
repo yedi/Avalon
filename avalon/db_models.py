@@ -96,7 +96,17 @@ class User(Document):
             "rel": ObjectId,
             "is_upvote": bool
         }],
-        'item': ObjectId
+        'item': ObjectId,
+        'links': [{
+            'name': unicode,
+            'url': unicode
+        }],
+        'subscriptions': [{
+            'item': ObjectId,
+            'comments': bool,
+            'seen': datetime,
+            'comment_seen': datetime
+        }]
     }
     validators = {
     }

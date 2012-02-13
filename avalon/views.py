@@ -76,9 +76,12 @@ def discoverPage():
             'comment_parent': {"$ne": None}
         }).sort('time_linked', -1).limit(10))
 
+    items = set([db.getItem(rel.parent) for rel in new_rels])
+    items.update([db.getItem(rel.comment_parent) for rel in new_com_rels])
     new_dict = {
         'new_rels': db.prepareForClient(new_rels),
-        'new_com_rels': db.prepareForClient(new_com_rels)
+        'new_com_rels': db.prepareForClient(new_com_rels),
+        'items': db.prepareForClient(items)
     }
     return render_template('discover.html', nd=new_dict, tab='view-tab')
 
