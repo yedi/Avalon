@@ -828,6 +828,8 @@ function renderSlide(type) {
   slide
     .empty()
     .append(createNodeElement(node.id), children);
+
+  addToHistory(slide_id);
 }
 
 /**
@@ -900,6 +902,40 @@ function displayChild(rel_id, from) {
   }
   highlightChild();
   return false;
+}
+
+function addToHistory(rel_id) {
+  var item = item_list[rel_list[rel_id].child];
+
+  var cur_path = window.location.pathname;
+  var new_path = cur_path;
+
+  //avalon.com/rel/5678-9012
+  //avalon.com/i/1234/rel/5678-9012
+  if (cur_path.indexOf("/rel/") === -1) {
+    if (new_path.charAt(new_path.length - 1) !== '/') {
+      new_path += '/';
+    }
+    new_path += 'rel/';
+  }
+  else {
+    new_path += '-';
+  }
+  new_path = new_path + rel_id;
+
+  var cur_state = {
+    cp: currentPosition
+  };
+  var history_link = $('<a />')
+      .attr('href', '#')
+      .attr('onclick', 'return false;')
+      .text(getDisplay(item));
+
+  $('#slide-history').append(history_link, ' >> ');
+
+  if ('root' === rel_id) return;
+
+  window.history.pushState(cur_state, "", new_path);
 }
 
 //inital values
@@ -1054,6 +1090,8 @@ $(document).ready(function() {
 {% endblock %}
 {% block body %}
   <!-- <div id="back"><a href="#" onclick="return false;">Back</a></div> -->
+  <div id="slide-history">
+  </div>
   <div id="slides-container">
     <br />
   </div>

@@ -1,0 +1,17 @@
+<span class="node" id="n_<%= is_root ? 'root' : 'id' %>">
+	<span style="visibility: hidden; " class="node-vc">__</span>
+	<span class="node-body span7">
+		<%= body %><br>
+		<a class="disc-link" href="/view/<%= id %>">View Discussion</a>
+	</span>
+	<span class="node-tldr span7">
+		<span class="node-tldr-tag">tldr:</span>
+		<%= tldr %>
+	</span>
+	<div class="node-footer span7">
+		<a class="by-user" href="u/<%= username %>/item"><%= username %></a>
+		<span></span>
+		<button class="btn post-button">Reply</button>
+		<a class="mi-button" href="#" onclick="return false">More options</a>
+	</div>
+</span>
