@@ -1,0 +1,25 @@
+Hey mr,
+
+This is yedi from the irc.
+
+So I have a view that I want to make. View my current app here: http://ec2-50-16-106-77.compute-1.amazonaws.com/  (I'm rewriting it in backbone).
+
+The app is an elaborate communications platform (a new kind of forum). Basically you post items, and people reply to those items with their own posts. So each item has children, which themselves are items. My app has two main models, items and relations(rels). Items contain the content of an item, and relations are objects that represent the relations between two items. Each relation consists of a parent and a child, both of which are items. You can see the models for them here: 
+item - https://github.com/yedi/Avalon/blob/backbone_rewrite/avalon/static/app/modules/models/item.js
+relation - https://github.com/yedi/Avalon/blob/backbone_rewrite/avalon/static/app/modules/models/relation.js
+
+The view I want to create is the ".node" element. On the app, that is the section that includes the body, user(who created the item), votecount, reply-button, etc of a post. The view takes info from a rel and the rel's child(item). The votecount is from the rel, and everything else is from the child. That's why when we talked I wanted to create a view that uses two models. (that being the rel, and the rel's child).
+
+So you suggest I shouldn't do that? How else should I represent my app? Should I just give my relations actual item models instead of references to item models? 
+i.e.:
+var rel_model = new RelationModel({parent: an_item_1, child: an_item_2})
+var nodeview = new NodeView({model: a_rel});
+
+this is what I was initially thinking of doing:
+var rel_model = new RelationModel({parent: an_item_1.id, child: an_item_2.id})
+var nodeview = new NodeView({rel_model: a_rel, item_model: an_item}); //item_model is the rel's child item
+
+
+One thing to keep in mind is that an item can be a child/parent to multiple other items. And when one item is changed, the change has to be reflected in all the relations that have that item as a child or parent. That is why I gave each relation a pointer to an item as opposed to the item itself because I want to make sure that if an item changes, it changes in every relation. (I'm not sure if I'm explaining this properly. I'm also not sure if this is an issue with backbone. In backbone, can one model(a relation) share submodels(items) with other models(relations)? Or do I have to keep it the way I have it?(giving relations ids pointing to items as opposed the item itself))
+
+sorry for the long email, I'm new to backbone and I really want to come up with a solid architecture for my app. This email is uploaded to github here https://github.com/yedi/Avalon/blob/backbone_rewrite/avalon/static/app/hey_mr-email.txt

@@ -5,11 +5,13 @@ define(['underscore', 'backbone'], function(_, Backbone) {
     defaults: {
       body: "empty item...",
       user: "undefined user",
+      tags: ["empty item"]
+      //tldr: "A TLDR" doesn't need to be defined
+
       /* For future implementations
       upvotes: 0,
       downvotes: 0,
       */
-      tags: ["empty item"]
     }
   });
   return ItemModel;

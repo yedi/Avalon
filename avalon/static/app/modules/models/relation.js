@@ -3,7 +3,11 @@ define(['underscore', 'backbone'], function(_, Backbone) {
 
     // Default attributes for the todo.
     defaults: {
-      //child and parent are references to item models
+      /**
+       * child and parent are references to item models
+       * children and parents are stored as references to items in the mongo db clientside. 
+       * So their values are simple item-ids (which are strings). 
+       */
       parent: null,
       child: null,
       linked_by: "undefined user"
