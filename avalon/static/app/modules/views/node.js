@@ -21,8 +21,8 @@
  */
 define([
   'jquery', 
-  'underscore', 
-  'backbone',
+  'use!underscore', 
+  'use!backbone',
   'text!templates/node.html'
   ], function($, _, Backbone, nodeTemplate){
   var NodeView = Backbone.View.extend({

@@ -3,7 +3,7 @@ define([
   "jquery",
   "use!underscore",
   "use!backbone",
-  "use!backbone-relational"
+  "use!backbone_relational"
 ],
 
 function($, _, Backbone, BR) {

@@ -1,11 +1,10 @@
 define([
-  'underscore', 
-  'backbone',
+  'use!underscore', 
+  'use!backbone',
 
   //modules
-  "models/item.js"
-
-  "collections/rels.js"
+  "modules/models/item",
+  "modules/collections/rels"
 ], 
 
 function(_, Backbone, Item, Rels) {
@@ -20,7 +19,7 @@ function(_, Backbone, Item, Rels) {
        */
       parent: null,
       child: null,
-      linked_by: "undefined user"
+      linked_by: "undefined user",
       upvotes: 0,
       downvotes: 0
     },

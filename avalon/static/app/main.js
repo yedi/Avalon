@@ -4,13 +4,15 @@ require([
   // Libs
   "jquery",
   "use!backbone",
-  "use!backbone-relational",
+  "use!backbone_relational",
 
   // Modules
-  "modules/example"
+  "modules/models/item",
+  "modules/models/rel",
+  "modules/views/node"
 ],
 
-function(namespace, jQuery, Backbone, BR, Example) {
+function(namespace, jQuery, Backbone, BR, Item, Rel, NodeView) {
 
   // Defining the application router, you can attach sub routers here.
   var Router = Backbone.Router.extend({
@@ -21,10 +23,35 @@ function(namespace, jQuery, Backbone, BR, Example) {
 
     index: function(hash) {
       var route = this;
-      var tutorial = new Example.Views.Tutorial();
+      // var tutorial = new Example.Views.Tutorial();
+      var item_1 = new ItemModel({
+        id: "773h1oh31",
+        body: "Item 1's body",
+        tldr: "Item 1",
+        user: "yedi"
+      })
+      var item_2 = new ItemModel({
+        id: "773h2oh32",
+        body: "Item 2's body",
+        tldr: "Item 2",
+        user: "nkessel"
+      })
+      var rel_1 = new RelModel({
+        id: "arel-dbks",
+        parent: "773h1oh31",
+        child: "773h2oh32",
+        upvotes: 80,
+        downvotes: 11
+      })
+      var node = new NodeView({
+        model: rel_1
+      })
+      var an_el = node.render
+      $("#main").html(an_el);
 
       // Attach the tutorial to the DOM
-      tutorial.render(function(el) {
+      /*
+      node.render(function(el) {
         $("#main").html(el);
 
         // Fix for hashes in pushState and hash fragment
@@ -39,6 +66,7 @@ function(namespace, jQuery, Backbone, BR, Example) {
           route._alreadyTriggered = true;
         }
       });
+      */
     }
   });
 

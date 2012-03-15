@@ -42,8 +42,8 @@ def item_page(item_id):
     if session['logged_in']:
         db.markSeen(session['username'], item_id)
 
-    return render_template('page.html', nd=node_dict, tab='browse-tab')
-    # return render_template('page-bb.html', nd=node_dict, tab='browse-tab')
+    # return render_template('page.html', nd=node_dict, tab='browse-tab')
+    return render_template('page-bb.html', nd=node_dict, tab='browse-tab')
 
 
 @app.route('/view/<item_id>')

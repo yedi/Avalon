@@ -1,8 +1,8 @@
 define([
-  'underscore', 
-  'backbone', 
-  'libs/backbone/localstorage', 
-  'models/item'
+  'use!underscore', 
+  'use!backbone', 
+  'backbone_localstorage', 
+  'modules/models/item'
   ], function(_, Backbone, Store, Item){
 	  
 	var ItemsCollection = Backbone.Collection.extend({
