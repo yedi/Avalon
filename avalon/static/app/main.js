@@ -4,12 +4,13 @@ require([
   // Libs
   "jquery",
   "use!backbone",
+  "use!backbone-relational",
 
   // Modules
   "modules/example"
 ],
 
-function(namespace, jQuery, Backbone, Example) {
+function(namespace, jQuery, Backbone, BR, Example) {
 
   // Defining the application router, you can attach sub routers here.
   var Router = Backbone.Router.extend({

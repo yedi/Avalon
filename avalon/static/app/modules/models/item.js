@@ -1,5 +1,5 @@
 define(['underscore', 'backbone'], function(_, Backbone) {
-  var ItemModel = Backbone.Model.extend({
+  var ItemModel = Backbone.RelationalModel.extend({
 
     // Default attributes for the todo.
     defaults: {
@@ -7,6 +7,10 @@ define(['underscore', 'backbone'], function(_, Backbone) {
       user: "undefined user",
       tags: ["empty item"]
       //tldr: "A TLDR" doesn't need to be defined
+      /* these are relational RelModels defined in models/rel.js
+      child_rels;
+      parent_rels;
+      */
 
       /* For future implementations
       upvotes: 0,

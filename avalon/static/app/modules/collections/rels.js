@@ -2,7 +2,7 @@ define([
   'underscore', 
   'backbone', 
   'libs/backbone/localstorage', 
-  'models/relation'
+  'models/rel'
   ], function(_, Backbone, Store, Rel){
 	  
 	var RelsCollection = Backbone.Collection.extend({

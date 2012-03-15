@@ -23,3 +23,10 @@ var nodeview = new NodeView({rel_model: a_rel, item_model: an_item}); //item_mod
 One thing to keep in mind is that an item can be a child/parent to multiple other items. And when one item is changed, the change has to be reflected in all the relations that have that item as a child or parent. That is why I gave each relation a pointer to an item as opposed to the item itself because I want to make sure that if an item changes, it changes in every relation. (I'm not sure if I'm explaining this properly. I'm also not sure if this is an issue with backbone. In backbone, can one model(a relation) share submodels(items) with other models(relations)? Or do I have to keep it the way I have it?(giving relations ids pointing to items as opposed the item itself))
 
 sorry for the long email, I'm new to backbone and I really want to come up with a solid architecture for my app. This email is uploaded to github here https://github.com/yedi/Avalon/blob/backbone_rewrite/avalon/static/app/hey_mr-email.txt
+
+
+
+
+----
+
+if anyone is willing to help me out with some architectural issues i'm having, it'd be much appreciated: https://raw.github.com/yedi/Avalon/backbone_rewrite/avalon/static/app/hey_mr-email.txt

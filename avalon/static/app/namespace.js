@@ -2,10 +2,11 @@ define([
   // Libs
   "jquery",
   "use!underscore",
-  "use!backbone"
+  "use!backbone",
+  "use!backbone-relational"
 ],
 
-function($, _, Backbone) {
+function($, _, Backbone, BR) {
   // Put application wide code here
 
   return {

@@ -17,13 +17,12 @@
 */
 
 /*
- * In order to define a node view, you must give it an item-model and a rel-model,
  *
  */
 define([
   'jquery', 
   'underscore', 
-  'backbone',=
+  'backbone',
   'text!templates/node.html'
   ], function($, _, Backbone, nodeTemplate){
   var NodeView = Backbone.View.extend({
@@ -31,59 +30,27 @@ define([
     tagName:  "span",
     className: "node",
     root: false,
-    /*
-      rel_model;
-      item_model;
-    */
 
     // Cache the template function for a single item.
-    template: _.template(todosTemplate),
+    template: _.template(nodeTemplate),
 
     // The DOM events specific to an item.
     events: {
-      "click .check"              : "toggleDone",
-      "dblclick div.todo-content" : "edit",
-      "click span.todo-destroy"   : "clear",
-      "keypress .todo-input"      : "updateOnEnter",
-      "blur .todo-input"          : "close"
     },
 
-    // The TodoView listens for changes to its model, re-rendering. Since there's
-    // a one-to-one correspondence between a **Todo** and a **TodoView** in this
+    // The NodeView listens for changes to its model, re-rendering. Since there's
+    // a one-to-one correspondence between a **Node** and a **NodeView** in this
     // app, we set a direct reference on the model for convenience.
     initialize: function() {
+      this.id = "n_" + this.model.id;
       _.bindAll(this, 'render');
-      this.rel_model.bind('change', this.render);
-      this.item_model.bind('change', this.render);
+      this.model.bind('change', this.render);
     },
 
     // Re-render the contents of the todo item.
     render: function() {
       $(this.el).html(this.template(this.model.toJSON()));
-      this.input = this.$('.todo-input');
       return this;
-    },
-
-    // Toggle the `"done"` state of the model.
-    toggleDone: function() {
-      this.model.toggle();
-    },
-
-    // Switch this view into `"editing"` mode, displaying the input field.
-    edit: function() {
-      $(this.el).addClass("editing");
-      this.input.focus();
-    },
-
-    // Close the `"editing"` mode, saving changes to the todo.
-    close: function() {
-      this.model.save({content: this.input.val()});
-      $(this.el).removeClass("editing");
-    },
-
-    // If you hit `enter`, we're through editing the item.
-    updateOnEnter: function(e) {
-      if (e.keyCode == 13) this.close();
     },
 
     // Remove the item, destroy the model.
@@ -92,5 +59,5 @@ define([
     }
 
   });
-  return TodoView;
+  return NodeView;
 });
