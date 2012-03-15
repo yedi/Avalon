@@ -9,7 +9,7 @@ define([
   "use!plugins/backbone-localstorage"
 ],
 
-function($, _, Backbone, BR) {
+function($, _, Backbone) {
   // Put application wide code here
 
   return {
