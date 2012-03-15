@@ -1,7 +1,7 @@
 define([
   'jquery', 
-  'underscore', 
-  'backbone',
+  'use!underscore', 
+  'use!backbone',
   'text!templates/child.html'
   ], function($, _, Backbone, childTemplate){
   var ChildView = Backbone.View.extend({

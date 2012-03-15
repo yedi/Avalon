@@ -1,4 +1,4 @@
-define(['underscore', 'backbone'], function(_, Backbone) {
+define(['use!underscore', 'use!backbone'], function(_, Backbone) {
   var UserModel = Backbone.Model.extend({
 
     // Default attributes for the todo.

@@ -1,7 +1,6 @@
 define([
   'use!underscore', 
   'use!backbone', 
-  'backbone_localstorage', 
   'modules/models/item'
   ], function(_, Backbone, Store, Item){
 	  

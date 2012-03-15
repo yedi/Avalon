@@ -4,7 +4,6 @@ require([
   // Libs
   "jquery",
   "use!backbone",
-  "use!backbone_relational",
 
   // Modules
   "modules/models/item",
