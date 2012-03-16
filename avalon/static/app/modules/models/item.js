@@ -1,4 +1,10 @@
-define(['use!underscore', 'use!backbone'], function(_, Backbone) {
+define([
+  'namespace',
+
+  'use!underscore', 
+  'use!backbone'
+], 
+function(namespace, _, Backbone) {
   var ItemModel = Backbone.RelationalModel.extend({
 
     // Default attributes for the todo.

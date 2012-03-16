@@ -11,7 +11,7 @@ require([
   "modules/views/node"
 ],
 
-function(namespace, jQuery, Backbone, BR, Item, Rel, NodeView) {
+function(namespace, jQuery, Backbone, BR, ItemModel, RelModel, NodeView) {
 
   // Defining the application router, you can attach sub routers here.
   var Router = Backbone.Router.extend({
@@ -45,7 +45,7 @@ function(namespace, jQuery, Backbone, BR, Item, Rel, NodeView) {
       var node = new NodeView({
         model: rel_1
       })
-      var an_el = node.render
+      var an_el = node.render().el
       $("#main").html(an_el);
 
       // Attach the tutorial to the DOM

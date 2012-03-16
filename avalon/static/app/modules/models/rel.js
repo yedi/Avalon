@@ -1,4 +1,6 @@
 define([
+  'namespace',
+
   'use!underscore', 
   'use!backbone',
 
@@ -7,7 +9,7 @@ define([
   "modules/collections/rels"
 ], 
 
-function(_, Backbone, Item, Rels) {
+function(namespace, _, Backbone, Item, Rels) {
   var RelModel = Backbone.RelationalModel.extend({
 
     // Default attributes for the todo.
