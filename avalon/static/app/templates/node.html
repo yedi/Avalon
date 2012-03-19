@@ -1,7 +1,11 @@
-<!--<span class="node" id="n_<%= is_root ? 'root' : 'id' %>">-->
-	<span style="visibility: hidden; " class="node-vc"><%= upvotes - downvotes %></span>
+<!--<span class="node" id="n_<%= is_root ? 'root' : id %>">-->
+	<span class="node-vc">
+		<a class="nv-up" href="#" onclick="return vote('up', id)">+</a>
+		<a class="nv-down" href="#" onclick="return vote('down', id)">-</a>
+		<span class="vc-num"><%= upvotes - downvotes %></span>
+	</span>
 	<span class="node-body span7">
-		<%= body %><br>
+		<%= child.body %><br>
 		<a class="disc-link" href="/view/<%= child.id %>">View Discussion</a>
 	</span>
 	<span class="node-tldr span7">
@@ -9,7 +13,7 @@
 		<%= child.tldr %>
 	</span>
 	<div class="node-footer span7">
-		<a class="by-user" href="u/<%= username %>/item"><%= linked_by %></a>
+		<a class="by-user" href="u/<%= linked_by %>/item"><%= linked_by %></a>
 		<span></span>
 		<button class="btn post-button">Reply</button>
 		<a class="mi-button" href="#" onclick="return false">More options</a>

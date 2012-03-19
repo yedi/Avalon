@@ -24,12 +24,12 @@ define([
   'use!underscore', 
   'use!backbone',
   'text!templates/node.html'
-  ], function($, _, Backbone, nodeTemplate){
+  ], 
+  function($, _, Backbone, nodeTemplate){
   var NodeView = Backbone.View.extend({
 
     tagName:  "span",
     className: "node",
-    root: false,
 
     // Cache the template function for a single item.
     template: _.template(nodeTemplate),
@@ -43,6 +43,7 @@ define([
     // app, we set a direct reference on the model for convenience.
     initialize: function() {
       this.id = "n_" + this.model.id;
+
       _.bindAll(this, 'render');
       this.model.bind('change', this.render);
     },

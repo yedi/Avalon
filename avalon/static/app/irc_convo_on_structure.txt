@@ -1,0 +1,27 @@
+<y3di> so I have a collection of items. I'm creating a module/view that manipulates it's own item collection. that module's item collection consists of items from a global item collection. Does it make sense to have a global item collection, and then have each instance of my module have their own item collections?
+<y3di> I'm not sure if this architecture would make sense. Would it be better to only one item collection throughout the app? if so, how should I have my module store the list of their items?
+* dang_ (~dang@120.28.177.4) Quit (Read error: Connection reset by peer)
+* dang (~dang@120.28.177.4) has joined #documentcloud
+* deltanovember (dcefaa46@gateway/web/freenode/ip.220.239.170.70) Quit (Ping timeout: 245 seconds)
+<PPaul> only use globals if they are constant
+<PPaul> otherwise you can't test
+<PPaul> and you'll prob fuck up
+<PPaul> hmmm, i think that if the collections in the views are not the exact same as the global, then they should be new collections
+<PPaul> each view should have it's own
+<PPaul> the global collection should prob act like a service
+* cakehero (~cakehero@cpe-66-65-191-170.nyc.res.rr.com) Quit (Quit: Leaving...)
+<y3di> so the item collection for each module will consists of items that need to be consistent across modules. for example if i edit a specific item in one module, that item will need to change in all the other modules that is using it
+<y3di> what do you mean when you say, 'act like a service'
+* timmywil (~timmywil@c-76-127-16-172.hsd1.tn.comcast.net) has joined #documentcloud
+* timmywil (~timmywil@c-76-127-16-172.hsd1.tn.comcast.net) Quit (Client Quit)
+<PPaul> use events to sync
+<PPaul> i guess you could use refs for the models
+<PPaul> but, i think events will probably be better
+<PPaul> when i say service, i mean that it acts like more than a simple collection
+<PPaul> it acts as an event dispatcher that other things in your program will listen to
+<y3di> ok so would the 'global' item collection and the module's item collection need two different collection definitions/be different types of collection object. Since the global item collection will have more/different functionality since it needs to act as a service
+<subbyyy> maybe have something that is mediating those views, pass in the collection on construction time to those views, so that they are shared but it is injected and not a hard dependency
+<y3di> or would it make sense to just have the global collection extend the basic item collection object =to add its own functionality
+<y3di> subbyyy: the thing is, each module/view starts out with no/1 items in its collection. And as a user does stuff, items get added or removed from the module's collection. I'm not sure if your solution would work well for that. (or maybe im misunderstanding what you're getting at. its very possible since im a bb newb)
+<PPaul> each view has it's own collection that is connected to the global service (yes extend base collection) via events
+<PPaul> whatever you do use events to connect things, so that loose connections are formed and it'll make your program easier to read/maintain/extend

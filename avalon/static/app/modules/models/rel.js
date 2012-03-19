@@ -23,7 +23,8 @@ function(namespace, _, Backbone, Item, Rels) {
       child: null,
       linked_by: "undefined user",
       upvotes: 0,
-      downvotes: 0
+      downvotes: 0,
+      is_root: false
     },
 
     relations: [{ 
@@ -36,7 +37,7 @@ function(namespace, _, Backbone, Item, Rels) {
         //each item has a collection of child_rels (this.child_rels)
         type: Backbone.HasMany,
         key: 'child_rels',
-        collectionType: Rels,
+        collectionType: Backbone.RelsCollection,
         includeInJSON: false
       }
     }, { 
@@ -49,7 +50,7 @@ function(namespace, _, Backbone, Item, Rels) {
         //each item has a collection of parent_rels (this.parent_rels)
         type: Backbone.HasMany,
         key: 'parent_rels',
-        collectionType: Rels,
+        collectionType: Backbone.RelsCollection,
         includeInJSON: false
       }
     }]
