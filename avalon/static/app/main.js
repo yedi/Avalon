@@ -97,7 +97,12 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
 
       var global_rels = new Rels([rel_1, rel_2, rel_3, rel_4, rel_5]);
       var sd = new slideDisplay({});
+      $("#main").html(sd.render().el);
       sd.collection.add([rel_1]);
+      sd.collection.add([rel_2]);
+      sd.collection.add([rel_3]);
+      sd.collection.add([rel_4]);
+      setTimeout(function() { sd.pop(2); }, 3000);
       /*
       var node = new NodeView({ model: rel_1 });      
       $("#parent-node").html( node.render().el );

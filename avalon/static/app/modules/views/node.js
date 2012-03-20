@@ -30,6 +30,7 @@ define([
 
     tagName:  "span",
     className: "node",
+    id: -1,
 
     // Cache the template function for a single item.
     template: _.template(nodeTemplate),
@@ -42,14 +43,15 @@ define([
     // a one-to-one correspondence between a **Node** and a **NodeView** in this
     // app, we set a direct reference on the model for convenience.
     initialize: function() {
-      this.id = "n_" + this.model.id;
-
       _.bindAll(this, 'render');
       this.model.bind('change', this.render);
+
+      this.id = "n_" + this.model.id;
     },
 
     // Re-render the contents of the todo item.
     render: function() {
+      $(this.el).attr('id', this.id);
       $(this.el).html(this.template(this.model.toJSON()));
       return this;
     },

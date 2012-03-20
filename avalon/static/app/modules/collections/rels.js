@@ -2,8 +2,8 @@ define([
   'use!underscore', 
   'use!backbone', 
   'modules/models/rel'
-  ], function(_, Backbone, Rel){
-	  
+], 
+function(_, Backbone, Rel){
 	var RelsCollection = Backbone.Collection.extend({
 
     // Reference to this collection's model.
@@ -14,5 +14,5 @@ define([
     localStorage: new Store("rels-backbone-require"),
 */
   });
-  return new RelsCollection;
+  return RelsCollection;
 });
