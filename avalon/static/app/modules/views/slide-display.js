@@ -5,9 +5,10 @@ define([
   'text!templates/slideDisplay.html',
   "modules/views/node",
   "modules/views/child",
-  "modules/collections/rels"
+  "modules/collections/rels",
+  "modules/models/rel"
 ], 
-function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels){
+function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels, RelModel){
   var SlideDisplay = Backbone.View.extend({
 
     tagName:  "div",
@@ -20,7 +21,8 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels){
 
     // The DOM events specific to an item.
     events: {
-      'click .history-link': 'moveToH'
+      'click .history-link': 'moveToH',
+      'click .child-link': 'displayBranch'
     },
 
     // The NodeView listens for changes to its model, re-rendering. Since there's
@@ -43,14 +45,20 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels){
     render: function() {
       this.ren_num += 1;
       el = this.el;
-      $(el).find('#browse-history').html('');
+      $(el).find('#browse-history').html('curpos: ' + this.currentPosition);
       this.collection.each(function(rel, pos) {
+        if (rel.get('loaded') === false) {
+          var disp_text = "Loading..."
+        }
+        else {
+          var disp_text = rel.get('child').get('tldr');
+        }
         var history_link = $('<a />')
             .addClass('history-link')
             .attr('href', '#')
             .attr('onClick', 'return false;')
             .attr('id', 'hl-' + pos)
-            .text(rel.get('child').get('tldr'));
+            .text(disp_text);
 
         if (pos === this.currentPosition) {
           history_link.css('font-weight', 'bold');
@@ -84,7 +92,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels){
       $(this.el).find('#browse-history').append(' | <a>' + rel.child.tldr);
       */
 
-      this.currentPosition += 1;
+      this.currentPosition = this.collection.length-2;
       this.moveTo();
     },
 
@@ -92,9 +100,16 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels){
       var node = new NodeView({ model: rel });      
       ele.html( node.render().el );
 
+      //if the rel hasn't been loaded yet, don't try to render the branches
+      if (rel.get('loaded') === false) { 
+        return ele;
+      }
+
       var rel_child = rel.get("child");
 
+      //cl is the children list for an item
       var cl = $("<ul />")
+          .addClass('children')
           .attr("id", "cl_" + rel.id);
 
       rel_child.get("child_rels").each(function(rel, index) {
@@ -102,16 +117,13 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels){
         cl.append(child.render().el);
       });
 
-      var children_el = $("<span />")
-          .addClass("children")
-          .append(cl);
-
-      ele.append(children_el);
+      ele.append(cl);
       return ele;
     },
 
     moveTo: function(pos) {
       if (arguments.length < 1) pos = this.currentPosition;
+      if (pos < 0) pos = 0;
       if (pos >= this.collection.length) pos = this.collection.length -1;
 
       $(this.el).find('#slideInner').animate({'marginLeft' : -20 + this.slideWidth*(-pos)});
@@ -119,10 +131,38 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels){
     },
 
     moveToH: function (e) {
-      var num = parseInt($(e.currentTarget).attr('id').split('-')[1], 10)
+      var num = parseInt($(e.currentTarget).attr('id').split('-')[1], 10);
       this.moveTo(num);
     },
 
+    displayBranch: function(e) {
+      var $ele = $(e.currentTarget);
+      var col = this.collection;
+
+      //if this rel exists on the branch history, just move the current view to the position of that rel.
+      var branch_id = $ele.attr('id').split('_')[1];
+      var branch_rel = col.get(branch_id)
+      if (branch_rel !== undefined) {
+        var pos = col.indexOf(branch_rel);
+        this.moveTo(pos-1);
+        //alert('on branch history');
+        return;
+      }
+      
+      var parent_rel_id = $ele.parents('.children').attr('id').split('_')[1];
+      var pos = col.indexOf(col.get(parent_rel_id));
+      this.currentPosition = pos;
+      this.pop(pos + 1);
+
+      empty_model = new RelModel({loaded: false, id: branch_id})
+      col.add(empty_model);
+      // col.add({loaded: false, id: branch_id, parent: 'empty', child: 'empty'});
+      this.trigger('needCompleteRel', branch_id, col.length-1);
+    },
+
+    /**
+     * Removes all the rels at the index and to the end of the list from the dom and the collection 
+     */
     pop: function(index) {
       var col = this.collection;
       if (arguments.length < 1) index = col.length - 1;

@@ -52,6 +52,10 @@ define([
     // Re-render the contents of the todo item.
     render: function() {
       $(this.el).attr('id', this.id);
+      if (this.model.get('loaded') === false) {
+        $(this.el).html('Loading...');
+        return this;
+      }
       $(this.el).html(this.template(this.model.toJSON()));
       return this;
     },

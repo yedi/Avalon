@@ -1,3 +1,8 @@
+/*
+so I have a global collection of items that I want to treat as a service, 
+so that whenever any part of my app needs an item, it'll query the collection. 
+If the collection doesn't have the item, it needs to get it from the server.
+*/
 require([
   "namespace",
 
@@ -18,12 +23,39 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
   var Router = Backbone.Router.extend({
     routes: {
       "": "index",
-      ":hash": "index"
+      "i/:item_id": "index",
+      "i/:item_id/r/:rel_ids": "index",
+      "*hash": "catchAll"
+      //":hash": "index"
     },
 
-    index: function(hash) {
+    sd: new slideDisplay(),
+    //global_items: new Items(),
+
+    addRootRel: function(item_id) {
+
+    },
+
+    index: function(item_id, rel_ids) {
+      if (item_id === undefined) {
+        item_id = 'root'; //change this to the root item
+      }
+
+      if (rel_ids !== undefined) {
+        rel_ids = rel_ids.split('-');
+      }
+
+      var sd = this.sd;
+      sd.bind()
+
       var route = this;
       // var tutorial = new Example.Views.Tutorial();
+      var empty = new ItemModel({
+        id: "empty",
+        body: "nada",
+        tldr: "nada",
+        user: "admin"
+      });
       var item_1 = new ItemModel({
         id: "itemid-1-1",
         body: "Item 1's body",
@@ -94,15 +126,29 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
         upvotes: 80,
         downvotes: 22
       });
+      var rel_6 = new RelModel({
+        id: "arel-6",
+        linked_by: "yedi",
+        parent: "itemid-1-1",
+        child: "itemid-4-4",
+        upvotes: 80,
+        downvotes: 22
+      });
 
-      var global_rels = new Rels([rel_1, rel_2, rel_3, rel_4, rel_5]);
-      var sd = new slideDisplay({});
       $("#main").html(sd.render().el);
+      
+      // if (sd.collection.length === 0) {
+      //   addRootRel(item_id);
+      // }
+      
       sd.collection.add([rel_1]);
       sd.collection.add([rel_2]);
       sd.collection.add([rel_3]);
       sd.collection.add([rel_4]);
-      setTimeout(function() { sd.pop(2); }, 3000);
+      sd.collection.add([rel_5]);
+      //setTimeout(function() { sd.pop(2); }, 3000);
+      
+
       /*
       var node = new NodeView({ model: rel_1 });      
       $("#parent-node").html( node.render().el );
