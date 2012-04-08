@@ -19,14 +19,94 @@ define([
 function(namespace, _, Backbone, Items, Rels) {
   var DataStore = Backbone.RelationalModel.extend({
 
-    // Default attributes for the todo.
+    // Default attributes for this datastore are a collection of items and rels.
     defaults: {
-      items: new Items(),
-      rels: new Rels(),
+      rels: new Rels([]),
+      items: new Items([])
     },
 
-    getCompleteRel: function(rel_id) {
+    // initialize: function() {
+    //   this.items = 
+    // }
+
+    initialize: function() {
+      this.rels = new Rels();
+      this.items = new Items();
+    },
+
+    //adds new models to a collection. If a model already exists, it overwrites the attributes.
+    addTo: function(col, models) {
+      models = _.isArray(models) ? models.slice() : [models];
+      existing_models = _.filter(models, function(model) {
+        return col.indexOf(model) !== -1
+      });
+
+      _.each(existing_models, function(model) {
+        col_model = col.get(model.get('id'));
+        col_model.attributes = model.attributes;
+        col_model.set('loaded', true);
+      });
+
+      col.add(models);
+    },
+
+    getRelFromServer: function(rel_id) {
+      var self = this;
+      $.post('/grabRel', {rel_id: rel_id}, 
+      function (data)
+      {
+        self.addTo(self.rels, data.rel);
+        self.addTo(self.rels, data.child_rels);
+        self.addTo(self.items, data.item);
+        self.addTo(self.items, data.child_items);
+        self.addTo(self.items, data.parent_items);
+      });
+    },
+
+    getItemFromServer: function(item_id) {
+      var self = this;
+      $.post('/grabItem', {item_id: item_id}, 
+      function (data)
+      {
+        self.addTo(self.rels, data.child_rels);
+        self.addTo(self.items, data.item);
+        self.addTo(self.items, data.child_items);
+        self.addTo(self.items, data.parent_items);
+      });
+    },
+
+    getItemsFromServer: function(item_ids) {
+      var self = this;
+      _.each(item_ids, function(item_id) {
+        self.getItemFromServer(item_id);
+      });
+    },
+
+    getCompleteRel: function(rel_id, rel_model) {
+      var rel = this.rels.get(rel_id);
+
+      if (rel === undefined) {
+        this.rels.add(rel_model);
+        this.getRelFromServer(rel_id);
+        return;
+      }
       
+      if (rel.get('parent') === undefined || rel.get('child') === undefined) {
+        var needed_items = [];
+
+        if (rel.get('parent') === undefined) {
+          needed_items.push(rel.getRelation('parent').keyContents);
+        }
+        if (rel.get('child') === undefined) {
+          needed_items.push(rel.getRelation('child').keyContents);
+        }
+
+        this.getItemsFromServer(needed_items);
+        return;
+      }
+
+      rel_model.attributes = rel.attributes;
+      rel_model.set('loaded', true);
     },
     
   });

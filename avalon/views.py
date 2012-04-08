@@ -25,6 +25,11 @@ def index():
     return item_page(db.root._id)
 
 
+@app.route('/printRoot')
+def printRoot():
+    return str(db.root._id)
+
+
 @app.route('/i/<item_id>')
 def item_page(item_id):
     item_id = ObjectId(item_id)
@@ -275,17 +280,17 @@ def grabRel():
 
 @app.route('/grabItem', methods=['POST'])
 def grabItem():
-    """
+    item_id = ObjectId(request.form['item_id'])
+    if db.getItem(item_id) is None:
+        return 'This item does not exist'
+    session['current_item'] = item_id
     need = {
-        "users": True,
         "parent_items": True,
         "child_items": True,
         "child_rels": True
     }
-
-    item_dict = getItemInfo(request.form['item_id'], need)
+    item_dict = db.getItemInfo(item_id, need, True)
     return jsonify(item_dict)
-    """
 
 
 @app.route('/u/<username>/item')

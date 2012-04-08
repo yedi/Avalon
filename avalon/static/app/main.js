@@ -14,10 +14,11 @@ require([
   "modules/models/item",
   "modules/models/rel",
   "modules/collections/rels",
-  "modules/views/slide-display"
+  "modules/views/slide-display",
+  "modules/models/datastore"
 ],
 
-function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
+function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, DataStore) {
 
   // Defining the application router, you can attach sub routers here.
   var Router = Backbone.Router.extend({
@@ -30,7 +31,7 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
     },
 
     sd: new slideDisplay(),
-    //global_items: new Items(),
+    datastore: new DataStore(),
 
     addRootRel: function(item_id) {
 
@@ -46,16 +47,17 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
       }
 
       var sd = this.sd;
-      sd.bind()
+      var datastore = this.datastore;
+      sd.on('needCompleteRel', datastore.getCompleteRel, datastore);
 
       var route = this;
       // var tutorial = new Example.Views.Tutorial();
-      var empty = new ItemModel({
-        id: "empty",
-        body: "nada",
-        tldr: "nada",
-        user: "admin"
-      });
+      // var root = new ItemModel({
+      //   id: "4f387a9993e9ce7288000f93",
+      //   body: "nada",
+      //   tldr: "nada",
+      //   user: "admin"
+      // });
       var item_1 = new ItemModel({
         id: "itemid-1-1",
         body: "Item 1's body",
@@ -68,12 +70,12 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
         tldr: "Item 2",
         user: "nkessel"
       });
-      var item_3 = new ItemModel({
-        id: "itemid-3-3",
-        body: "Item 3's body",
-        tldr: "Item 3",
-        user: "nkessel"
-      });
+      // var item_3 = new ItemModel({
+      //   id: "itemid-3-3",
+      //   body: "Item 3's body",
+      //   tldr: "Item 3",
+      //   user: "nkessel"
+      // });
       var item_4 = new ItemModel({
         id: "itemid-4-4",
         body: "Item 4's body",
@@ -110,6 +112,12 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
         upvotes: 80,
         downvotes: 22
       });
+      var item_3 = new ItemModel({
+        id: "itemid-3-3",
+        body: "Item 3's body",
+        tldr: "Item 3",
+        user: "nkessel"
+      });
       var rel_4 = new RelModel({
         id: "arel-4",
         linked_by: "yedi",
@@ -118,11 +126,11 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
         upvotes: 80,
         downvotes: 22
       });
-      var rel_5 = new RelModel({
-        id: "arel-5",
+      var rel_root = new RelModel({
+        id: "rel-root",
         linked_by: "yedi",
         parent: "itemid-2-2",
-        child: "itemid-5-5",
+        child: "4f387a9993e9ce7288000f93",
         upvotes: 80,
         downvotes: 22
       });
@@ -135,6 +143,9 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
         downvotes: 22
       });
 
+      datastore.items.add([item_1, item_2, item_3, item_4, item_5]);
+      datastore.rels.add([rel_1, rel_2, rel_3, rel_4, rel_6, rel_root]);
+
       $("#main").html(sd.render().el);
       
       // if (sd.collection.length === 0) {
@@ -145,7 +156,7 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay) {
       sd.collection.add([rel_2]);
       sd.collection.add([rel_3]);
       sd.collection.add([rel_4]);
-      sd.collection.add([rel_5]);
+      // sd.collection.add([rel_5]);
       //setTimeout(function() { sd.pop(2); }, 3000);
       
 

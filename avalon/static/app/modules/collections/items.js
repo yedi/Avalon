@@ -2,8 +2,8 @@ define([
   'use!underscore', 
   'use!backbone', 
   'modules/models/item'
-  ], function(_, Backbone, Store, Item){
-	  
+], 
+function(_, Backbone, Item){
 	var ItemsCollection = Backbone.Collection.extend({
 
     // Reference to this collection's model.
@@ -14,5 +14,5 @@ define([
     localStorage: new Store("items-backbone-require"),
 */
   });
-  return new ItemsCollection;
+  return ItemsCollection;
 });

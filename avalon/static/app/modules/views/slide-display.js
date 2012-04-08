@@ -72,14 +72,14 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels, RelModel){
     },
 
     addOne: function(rel) {
-      if (this.collection.length == 1) {
-        new_node_el = this.createNodeEl($('#parent-node'), rel);
-        return;
-      }
-      else if (this.collection.length == 2) {
-        new_node_el = this.createNodeEl($('#child-node'), rel);
-        return;
-      }
+      // if (this.collection.length == 1) {
+      //   new_node_el = this.createNodeEl($('#parent-node'), rel);
+      //   return;
+      // }
+      // else if (this.collection.length == 2) {
+      //   new_node_el = this.createNodeEl($('#child-node'), rel);
+      //   return;
+      // }
 
       $(this.el).find('#slideInner').css('width', this.slideWidth * this.collection.length + 1);
         
@@ -97,7 +97,9 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels, RelModel){
     },
 
     createNodeEl: function(ele, rel) {
-      var node = new NodeView({ model: rel });      
+      var node = new NodeView({ model: rel });
+      node.on('needCompleteRel', this.needCompleteRel, this);
+
       ele.html( node.render().el );
 
       //if the rel hasn't been loaded yet, don't try to render the branches
@@ -112,13 +114,19 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels, RelModel){
           .addClass('children')
           .attr("id", "cl_" + rel.id);
 
+      self = this;
       rel_child.get("child_rels").each(function(rel, index) {
         var child = new ChildView({ model: rel});
+        child.on('needCompleteRel', self.needCompleteRel, self);
         cl.append(child.render().el);
       });
 
       ele.append(cl);
       return ele;
+    },
+
+    needCompleteRel: function(model_id, model) {
+      this.trigger('needCompleteRel', model_id, model);
     },
 
     moveTo: function(pos) {
@@ -138,9 +146,9 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels, RelModel){
     displayBranch: function(e) {
       var $ele = $(e.currentTarget);
       var col = this.collection;
+      var branch_id = $ele.attr('id').split('_')[1];
 
       //if this rel exists on the branch history, just move the current view to the position of that rel.
-      var branch_id = $ele.attr('id').split('_')[1];
       var branch_rel = col.get(branch_id)
       if (branch_rel !== undefined) {
         var pos = col.indexOf(branch_rel);
@@ -157,7 +165,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels, RelModel){
       empty_model = new RelModel({loaded: false, id: branch_id})
       col.add(empty_model);
       // col.add({loaded: false, id: branch_id, parent: 'empty', child: 'empty'});
-      this.trigger('needCompleteRel', branch_id, col.length-1);
+      // this.trigger('needCompleteRel', branch_id, empty_model);
     },
 
     /**

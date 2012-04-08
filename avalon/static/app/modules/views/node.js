@@ -52,8 +52,9 @@ define([
     // Re-render the contents of the todo item.
     render: function() {
       $(this.el).attr('id', this.id);
-      if (this.model.get('loaded') === false) {
+      if (this.model.get('loaded') === false || this.model.get('child') === undefined) {
         $(this.el).html('Loading...');
+        this.trigger('needCompleteRel', this.model.id, this.model);
         return this;
       }
       $(this.el).html(this.template(this.model.toJSON()));
