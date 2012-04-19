@@ -15,7 +15,9 @@ function(_, Backbone, Rel){
     localStorage: new Store("rels-backbone-require"),
 */
     initialize: function() {
+      //breakpoint
       var two = 1 + 1;
+      //this.model === undefined
     }
   });
 
