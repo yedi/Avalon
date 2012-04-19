@@ -5,10 +5,11 @@ define([
   'text!templates/slideDisplay.html',
   "modules/views/node",
   "modules/views/child",
-  "modules/collections/rels",
-  "modules/models/rel"
+  // "modules/models/rel"
+  'static/app/modules/models/rel.js',
+  "modules/collections/rels"
 ], 
-function($, _, Backbone, sdTemplate, NodeView, ChildView, Rels, RelModel){
+function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
   var SlideDisplay = Backbone.View.extend({
 
     tagName:  "div",

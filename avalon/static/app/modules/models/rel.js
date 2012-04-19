@@ -5,7 +5,8 @@ define([
   'use!backbone',
 
   //modules
-  "modules/models/item",
+  // "modules/models/item",
+  'static/app/modules/models/item.js',
   "modules/collections/rels"
 ], 
 
@@ -53,7 +54,11 @@ function(namespace, _, Backbone, Item, Rels) {
         collectionType: Backbone.RelsCollection,
         includeInJSON: false
       }
-    }]
+    }],
+
+    initialize: function() {
+      this.modelname = "yedi-rel";
+    }
   });
   return RelModel;
 });

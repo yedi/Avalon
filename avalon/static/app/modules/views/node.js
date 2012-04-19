@@ -45,6 +45,10 @@ define([
     initialize: function() {
       _.bindAll(this, 'render');
       this.model.bind('change', this.render);
+      if (this.model.get('child')) {
+        this.model.get('child').bind('change', this.render);
+      }
+
 
       this.id = "n_" + this.model.id;
     },

@@ -20,23 +20,24 @@ function(namespace, _, Backbone, Items, Rels) {
   var DataStore = Backbone.RelationalModel.extend({
 
     // Default attributes for this datastore are a collection of items and rels.
-    defaults: {
-      rels: new Rels([]),
-      items: new Items([])
-    },
-
-    // initialize: function() {
-    //   this.items = 
-    // }
+    // defaults: {
+    //   rels: new Rels([]),
+    //   items: new Items([])
+    // },
 
     initialize: function() {
       this.rels = new Rels();
       this.items = new Items();
     },
 
-    //adds new models to a collection. If a model already exists, it overwrites the attributes.
+    //adds new mongo models to a collection. If a model already exists, it overwrites the attributes.
     addTo: function(col, models) {
       models = _.isArray(models) ? models.slice() : [models];
+
+      _.each(models, function(model) {
+        model.id = model._id;
+      });
+
       existing_models = _.filter(models, function(model) {
         return col.indexOf(model) !== -1
       });

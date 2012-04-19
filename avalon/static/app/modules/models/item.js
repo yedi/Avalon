@@ -22,6 +22,10 @@ function(namespace, _, Backbone) {
       upvotes: 0,
       downvotes: 0,
       */
+    },
+
+    initialize: function() {
+      this.modelname = "yedi-item";
     }
   });
   return ItemModel;

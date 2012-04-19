@@ -11,8 +11,11 @@ require([
   "use!backbone",
 
   // Modules
-  "modules/models/item",
-  "modules/models/rel",
+  // "modules/models/item",
+  // "modules/models/rel",
+  'static/app/modules/models/item.js',
+  'static/app/modules/models/rel.js',
+
   "modules/collections/rels",
   "modules/views/slide-display",
   "modules/models/datastore"

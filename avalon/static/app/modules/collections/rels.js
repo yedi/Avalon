@@ -1,7 +1,8 @@
 define([
   'use!underscore', 
-  'use!backbone', 
-  'modules/models/rel'
+  'use!backbone',
+
+  'static/app/modules/models/rel.js'
 ], 
 function(_, Backbone, Rel){
 	var RelsCollection = Backbone.Collection.extend({
@@ -17,5 +18,6 @@ function(_, Backbone, Rel){
       var two = 1 + 1;
     }
   });
+
   return RelsCollection;
 });
