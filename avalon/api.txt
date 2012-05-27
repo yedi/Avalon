@@ -1,0 +1,10 @@
+/api/rel/rel_id -- return rel
+	parent: bool -- whether to return the parent_item of the rel, defaults to true
+	child: bool -- whether to return the child_item of the rel, defaults to true
+/api/item/item_id -- return item
+/api/children/item_id -- return children_rels/children_items of an item. 
+	limit: int -- specifies the number of children to return, defaults to 10
+	sortby: date, votecount, hot, -- specifies how the children should be sorted
+	tags: [string] -- specifies which tags to get children from, defaults to all tags
+	start: int -- number to start from
+/api/parents/item_id -- return parent_rels/parent_items of an item

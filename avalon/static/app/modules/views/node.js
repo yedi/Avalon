@@ -23,9 +23,10 @@ define([
   'jquery', 
   'use!underscore', 
   'use!backbone',
-  'text!templates/node.html'
+  'text!templates/node.html',
+  "modules/views/child",
   ], 
-  function($, _, Backbone, nodeTemplate){
+  function($, _, Backbone, nodeTemplate, ChildView){
   var NodeView = Backbone.View.extend({
 
     tagName:  "span",
@@ -44,11 +45,8 @@ define([
     // app, we set a direct reference on the model for convenience.
     initialize: function() {
       _.bindAll(this, 'render');
-      this.model.bind('change', this.render);
-      if (this.model.get('child')) {
-        this.model.get('child').bind('change', this.render);
-      }
-
+      this.model.on('change', this.render);
+      this.model.on('update:child', this.render);
 
       this.id = "n_" + this.model.id;
     },
@@ -56,12 +54,37 @@ define([
     // Re-render the contents of the todo item.
     render: function() {
       $(this.el).attr('id', this.id);
-      if (this.model.get('loaded') === false || this.model.get('child') === undefined) {
+      if (this.model.get('loaded') === false || !this.model.get('child')) {
+        // this.model.set('loaded', false);
         $(this.el).html('Loading...');
         this.trigger('needCompleteRel', this.model.id, this.model);
         return this;
       }
       $(this.el).html(this.template(this.model.toJSON()));
+      
+
+      this.model.get('child').on('change', this.render);
+      //cl is the children list for an item
+      var $cl = $("<ul />")
+          .addClass('children')
+          .attr("id", "cl_" + this.model.id);
+
+      //if the rel hasn't been loaded yet, don't try to render the branches
+      if (!this.model.get('child').get('children_loaded')) {
+        $cl.html('Loading...');
+        $(this.el).append($cl); 
+        this.trigger('needChildren', this.model.get('child'));
+        return this;
+      }
+
+      this.model.get('child').get("child_rels").each(function(rel, index) {
+        var child = new ChildView({ model: rel});
+        //child.on('needCompleteRel', self.needCompleteRel, self);
+        $cl.append(child.render().el);
+      });
+
+      $(this.el).append($cl);
+
       return this;
     },
 

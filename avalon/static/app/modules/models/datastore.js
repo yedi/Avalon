@@ -28,10 +28,14 @@ function(namespace, _, Backbone, Items, Rels) {
     initialize: function() {
       this.rels = new Rels();
       this.items = new Items();
+      this.clist = {}; //children list
     },
 
     //adds new mongo models to a collection. If a model already exists, it overwrites the attributes.
     addTo: function(col, models) {
+      if (col === 'items') col = this.items;
+      else if (col === 'rels') col = this.rels;
+
       models = _.isArray(models) ? models.slice() : [models];
 
       _.each(models, function(model) {
@@ -108,6 +112,17 @@ function(namespace, _, Backbone, Items, Rels) {
 
       rel_model.attributes = rel.attributes;
       rel_model.set('loaded', true);
+    },
+
+    getItemChildren: function(item) {
+      var self = this;
+      $.get('/api/children/' + item.id, 
+      function (data)
+      {
+        self.addTo(self.rels, data.child_rels);
+        self.addTo(self.items, data.child_items);
+        item.set('children_loaded', true);
+      });
     },
     
   });

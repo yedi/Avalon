@@ -7,6 +7,19 @@
 
   <!-- Application source -->
   <script data-main="{{ url_for('static', filename='app/config') }}" src="{{ url_for('static', filename='assets/js/libs/require.js') }}"></script>
+  <script type="text/javascript" language="javascript">
+  //inital values
+  {% if nd %}
+    var root_node_info = eval({{ nd|tojson|safe }});
+    root_node_info.rel = {
+      _id: 'root',
+      id: 'root',
+      child: root_node_info.item._id,
+      linked_by: null,
+    };
+    //addNodeInfo(root_node_info);
+  {% endif %}
+  </script>
 {% endblock %}
 {% block body %}
   <!-- Main container -->

@@ -21,9 +21,10 @@ define([
       this.id = "c_" + this.model.id;
       _.bindAll(this, 'render');
       this.model.bind('change', this.render);
-      if (this.model.get('child')) {
-        this.model.get('child').bind('change', this.render);
-      }
+      // if (this.model.get('child')) {
+      //   this.model.get('child').bind('change', this.render);
+      // }
+      this.model.bind('update:child', this.render);
     },
 
     // Re-render the contents of the todo item.

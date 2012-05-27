@@ -48,11 +48,11 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       el = this.el;
       $(el).find('#browse-history').html('curpos: ' + this.currentPosition);
       this.collection.each(function(rel, pos) {
-        if (rel.get('loaded') === false) {
+        if (rel.get('loaded') === false || !rel.get('child')) {
           var disp_text = "Loading..."
         }
         else {
-          var disp_text = rel.get('child').get('tldr');
+          var disp_text = rel.get('child').get('display_tldr');
         }
         var history_link = $('<a />')
             .addClass('history-link')
@@ -73,61 +73,32 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
     },
 
     addOne: function(rel) {
-      // if (this.collection.length == 1) {
-      //   new_node_el = this.createNodeEl($('#parent-node'), rel);
-      //   return;
-      // }
-      // else if (this.collection.length == 2) {
-      //   new_node_el = this.createNodeEl($('#child-node'), rel);
-      //   return;
-      // }
-
       $(this.el).find('#slideInner').css('width', this.slideWidth * this.collection.length + 1);
         
       new_node_el = $('<span />').addClass('span8 node-slide');
       new_node_el = this.createNodeEl(new_node_el, rel);
       $(this.el).find('#slideInner').append(new_node_el);
 
-      /*
-      var history_link
-      $(this.el).find('#browse-history').append(' | <a>' + rel.child.tldr);
-      */
-
-      this.currentPosition = this.collection.length-2;
+      if (this.collection.length > 1) this.currentPosition = this.collection.length-2;
+      else this.currentPosition = 0;
       this.moveTo();
     },
 
     createNodeEl: function(ele, rel) {
       var node = new NodeView({ model: rel });
       node.on('needCompleteRel', this.needCompleteRel, this);
+      node.on('needChildren', this.needChildren, this);
 
       ele.html( node.render().el );
-
-      //if the rel hasn't been loaded yet, don't try to render the branches
-      if (rel.get('loaded') === false) { 
-        return ele;
-      }
-
-      var rel_child = rel.get("child");
-
-      //cl is the children list for an item
-      var cl = $("<ul />")
-          .addClass('children')
-          .attr("id", "cl_" + rel.id);
-
-      self = this;
-      rel_child.get("child_rels").each(function(rel, index) {
-        var child = new ChildView({ model: rel});
-        child.on('needCompleteRel', self.needCompleteRel, self);
-        cl.append(child.render().el);
-      });
-
-      ele.append(cl);
       return ele;
     },
 
     needCompleteRel: function(model_id, model) {
       this.trigger('needCompleteRel', model_id, model);
+    },
+
+    needChildren: function(item) {
+      this.trigger('needChildren', item);
     },
 
     moveTo: function(pos) {
@@ -163,7 +134,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       this.currentPosition = pos;
       this.pop(pos + 1);
 
-      empty_model = new RelModel({loaded: false, id: branch_id})
+      empty_model = new RelModel({id: branch_id})
       col.add(empty_model);
       // col.add({loaded: false, id: branch_id, parent: 'empty', child: 'empty'});
       // this.trigger('needCompleteRel', branch_id, empty_model);
@@ -180,7 +151,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
         $(this.el).find('#n_' + rel.get('id')).parent().remove();
       });
       col.remove(rest);
-      if (this.currentPosition >= rest.length) this.currentPosition = this.collection.length - 2;
+      if (this.currentPosition >= this.collection.length) this.currentPosition = this.collection.length - 2;
       this.moveTo();
     },
 

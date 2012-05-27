@@ -395,3 +395,56 @@ def aboutPage():
     """
     return render_template('about.html', tab='about-tab')
     """
+
+
+# API
+@app.route('/api/item/<item_id>', methods=['GET'])
+def retrieveItem(item_id):
+    item_id = ObjectId(item_id)
+    item = db.getItem(item_id, in_json=True)
+    if item is None:
+        return 'This item does not exist'
+    session['current_item'] = item_id
+    return jsonify({'item': item})
+
+
+@app.route('/api/rel/<rel_id>', methods=['GET'])
+def retrieveRel(rel_id):
+    rel_id = ObjectId(rel_id)
+    rel = db.getrel(rel_id)
+    if rel is None:
+        return 'This rel does not exist'
+    rel_dict = {'rel': rel}
+    if request.args['parent']:
+        rel_dict['parent'] = db.getItem(rel.parent)
+    if request.args['child']:
+        rel_dict['child'] = db.getItem(rel.child)
+
+    #session['current_rel'] = rel_id
+    return jsonify(db.prepareForClient(rel_dict))
+
+
+@app.route('/api/children/<item_id>', methods=['GET'])
+def retrieveChildren(item_id):
+    item_id = ObjectId(item_id)
+    need = {
+        "child_items": True,
+        "child_rels": True
+    }
+    children = db.getItemInfo(item_id, need, True)
+    if children is None:
+        return 'This item does not exist'
+    return jsonify(children)
+
+
+@app.route('/api/parents/<item_id>', methods=['GET'])
+def retrieveParents(item_id):
+    item_id = ObjectId(item_id)
+    need = {
+        "parent_items": True,
+        "parent_rels": True
+    }
+    parents = db.getItemInfo(item_id, need, True)
+    if parents is None:
+        return 'This item does not exist'
+    return jsonify(parents)

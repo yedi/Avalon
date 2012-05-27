@@ -6,11 +6,10 @@ define([
 
   //modules
   // "modules/models/item",
-  'static/app/modules/models/item.js',
-  "modules/collections/rels"
+  'static/app/modules/models/item.js'
 ], 
 
-function(namespace, _, Backbone, Item, Rels) {
+function(namespace, _, Backbone, Item) {
   var RelModel = Backbone.RelationalModel.extend({
 
     // Default attributes for the todo.
@@ -54,11 +53,7 @@ function(namespace, _, Backbone, Item, Rels) {
         collectionType: Backbone.RelsCollection,
         includeInJSON: false
       }
-    }],
-
-    initialize: function() {
-      this.modelname = "yedi-rel";
-    }
+    }]
   });
   return RelModel;
 });

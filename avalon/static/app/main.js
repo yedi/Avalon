@@ -52,6 +52,7 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
       var sd = this.sd;
       var datastore = this.datastore;
       sd.on('needCompleteRel', datastore.getCompleteRel, datastore);
+      sd.on('needChildren', datastore.getItemChildren, datastore);
 
       var route = this;
       // var tutorial = new Example.Views.Tutorial();
@@ -146,8 +147,12 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
         downvotes: 22
       });
 
-      datastore.items.add([item_1, item_2, item_3, item_4, item_5]);
-      datastore.rels.add([rel_1, rel_2, rel_3, rel_4, rel_6, rel_root]);
+      datastore.addTo('items', root_node_info.item);
+      datastore.addTo('rels', root_node_info.rel);
+      sd.collection.add([root_node_info.rel]);
+
+      // datastore.items.add([item_1, item_2, item_3, item_4, item_5]);
+      // datastore.rels.add([rel_1, rel_2, rel_3, rel_4, rel_6, rel_root]);
 
       $("#main").html(sd.render().el);
       
@@ -155,10 +160,10 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
       //   addRootRel(item_id);
       // }
       
-      sd.collection.add([rel_1]);
-      sd.collection.add([rel_2]);
-      sd.collection.add([rel_3]);
-      sd.collection.add([rel_4]);
+      // sd.collection.add([rel_1]);
+      // sd.collection.add([rel_2]);
+      // sd.collection.add([rel_3]);
+      // sd.collection.add([rel_4]);
       // sd.collection.add([rel_5]);
       //setTimeout(function() { sd.pop(2); }, 3000);
       

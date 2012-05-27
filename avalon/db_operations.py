@@ -60,8 +60,11 @@ def getRootItem():
     })
 
 
-def getItem(item_id):
-    return connection[cur_db].items.Item.find_one({'_id': item_id})
+def getItem(item_id, in_json=False):
+    item = connection[cur_db].items.Item.find_one({'_id': item_id})
+    if (item is not None) & in_json:
+        item = prepareForClient([item])[0]
+    return item
 
 
 def deleteItem(item_id):
@@ -151,8 +154,11 @@ def editItem(item_id, body, tldr):
     return item
 
 
-def getRel(rel_id):
-    return connection[cur_db].relations.Relation.find_one({'_id': rel_id})
+def getRel(rel_id, in_json=False):
+    rel = connection[cur_db].relations.Relation.find_one({'_id': rel_id})
+    if rel & in_json:
+        rel = prepareForClient([rel])[0]
+    return rel
 
 
 def deleteRel(rel_id):
