@@ -31,7 +31,7 @@ def printRoot():
 
 
 @app.route('/i/<item_id>')
-def item_page(item_id):
+def item_page(item_id, initial_items=[], initial_rels=[]):
     item_id = ObjectId(item_id)
     if db.getItem(item_id) is None:
         return 'This item does not exist'
@@ -42,6 +42,10 @@ def item_page(item_id):
         "child_rels": True
     }
     node_dict = db.getItemInfo(item_id, need, True)
+    node_dict.update({
+        "initial_items": initial_items,
+        "initial_rels": initial_rels
+    })
     # node_dict['users'][:] = [d['name'] for d in node_dict['users']]
 
     if session['logged_in']:
@@ -49,6 +53,21 @@ def item_page(item_id):
 
     # return render_template('page.html', nd=node_dict, tab='browse-tab')
     return render_template('page-bb.html', nd=node_dict, tab='browse-tab')
+
+
+@app.route('/i/<item_id>/r/<rel_ids>')
+def item_page_with_rels(item_id, rel_ids):
+    rel_ids = rel_ids.split('-')
+    rel_ids = [ObjectId(rel_id) for rel_id in rel_ids]
+    rels = [db.getRel(rel_id, True) for rel_id in rel_ids]
+    items = set([ObjectId(rel["child"]) for rel in rels] + [ObjectId(rel["parent"]) for rel in rels])
+    items = [db.getItem(item, True) for item in items]
+    return item_page(item_id, items, rels)
+
+
+@app.route('/r/<rel_ids>')
+def index_page_with_rels(rel_ids):
+    return item_page_with_rels(db.root._id, rel_ids)
 
 
 @app.route('/view/<item_id>')

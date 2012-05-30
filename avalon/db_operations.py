@@ -156,7 +156,7 @@ def editItem(item_id, body, tldr):
 
 def getRel(rel_id, in_json=False):
     rel = connection[cur_db].relations.Relation.find_one({'_id': rel_id})
-    if rel & in_json:
+    if rel and in_json:
         rel = prepareForClient([rel])[0]
     return rel
 

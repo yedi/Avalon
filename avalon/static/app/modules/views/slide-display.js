@@ -6,7 +6,7 @@ define([
   "modules/views/node",
   "modules/views/child",
   // "modules/models/rel"
-  'static/app/modules/models/rel.js',
+  'modules/models/rel',
   "modules/collections/rels"
 ], 
 function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
@@ -23,7 +23,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
     // The DOM events specific to an item.
     events: {
       'click .history-link': 'moveToH',
-      'click .child-link': 'displayBranch'
+      'click .child-link': 'clickBranch'
     },
 
     // The NodeView listens for changes to its model, re-rendering. Since there's
@@ -36,9 +36,9 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       $(this.el).html(this.template());
       this.ren_num = 0;
 
-      _.bindAll(this, 'addOne', 'render');
+      _.bindAll(this, 'render');
 
-      this.collection.bind('add',     this.addOne);
+      // this.collection.bind('add',     this.addOne);
       this.collection.bind('all',     this.render);
     },
 
@@ -65,14 +65,16 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
           history_link.css('font-weight', 'bold');
         }
 
-        $(el).find('#browse-history').append(' ', history_link, ' |');
+        $(el).find('#browse-history').append(' ', history_link, ' >');
         history_link.bind
       });
       // $(this.el).find('#browse-history').html('rendered+' + this.ren_num);
       return this;
     },
 
-    addOne: function(rel) {
+    addSlide: function(rel) {
+      this.collection.add(rel);
+      rel = this.collection.get(rel.id);
       $(this.el).find('#slideInner').css('width', this.slideWidth * this.collection.length + 1);
         
       new_node_el = $('<span />').addClass('span8 node-slide');
@@ -107,6 +109,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       if (pos >= this.collection.length) pos = this.collection.length -1;
 
       $(this.el).find('#slideInner').animate({'marginLeft' : -20 + this.slideWidth*(-pos)});
+      this.currentPosition = pos;
       this.render();
     },
 
@@ -115,11 +118,32 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       this.moveTo(num);
     },
 
-    displayBranch: function(e) {
+    clickBranch: function(e) {
       var $ele = $(e.currentTarget);
-      var col = this.collection;
       var branch_id = $ele.attr('id').split('_')[1];
+      var parent_rel_id = $ele.parents('.children').attr('id').split('_')[1];
+      var col = this.collection;
+      var pos = col.indexOf(col.get(parent_rel_id));
+      this.displayBranch(branch_id, pos);
 
+      //make the new url for pushstate
+      var oldpath = document.location.pathname;
+      oldpath = oldpath.substring(0, oldpath.lastIndexOf('/') + 1);
+      if (oldpath.indexOf('/r/') === -1) oldpath += 'r/'
+      var newpath = this.collection.reduce(function (pathstring, rel) {
+        if (rel.id === 'root') return pathstring;
+        if (pathstring === oldpath) return pathstring + rel.id;
+        return pathstring + '-' +  rel.id
+      }, oldpath);
+      history.pushState({}, "", newpath);
+    },
+
+    displayBranch: function(branch_id, pos) {
+      if (arguments.length < 2) {
+        pos = this.collection.length - 1;
+      }
+
+      var col = this.collection;
       //if this rel exists on the branch history, just move the current view to the position of that rel.
       var branch_rel = col.get(branch_id)
       if (branch_rel !== undefined) {
@@ -129,13 +153,11 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
         return;
       }
       
-      var parent_rel_id = $ele.parents('.children').attr('id').split('_')[1];
-      var pos = col.indexOf(col.get(parent_rel_id));
       this.currentPosition = pos;
       this.pop(pos + 1);
 
       empty_model = new RelModel({id: branch_id})
-      col.add(empty_model);
+      this.addSlide(empty_model);
       // col.add({loaded: false, id: branch_id, parent: 'empty', child: 'empty'});
       // this.trigger('needCompleteRel', branch_id, empty_model);
     },

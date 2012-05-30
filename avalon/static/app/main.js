@@ -13,8 +13,8 @@ require([
   // Modules
   // "modules/models/item",
   // "modules/models/rel",
-  'static/app/modules/models/item.js',
-  'static/app/modules/models/rel.js',
+  'modules/models/item',
+  'modules/models/rel',
 
   "modules/collections/rels",
   "modules/views/slide-display",
@@ -28,6 +28,7 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
     routes: {
       "": "index",
       "i/:item_id": "index",
+      "r/:rel_ids": "index",
       "i/:item_id/r/:rel_ids": "index",
       "*hash": "catchAll"
       //":hash": "index"
@@ -38,6 +39,10 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
 
     addRootRel: function(item_id) {
 
+    },
+
+    catchAll: function(hash) {
+      window.location = document.location.origin + "/" + hash;
     },
 
     index: function(item_id, rel_ids) {
@@ -56,138 +61,25 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
 
       var route = this;
       // var tutorial = new Example.Views.Tutorial();
-      // var root = new ItemModel({
-      //   id: "4f387a9993e9ce7288000f93",
-      //   body: "nada",
-      //   tldr: "nada",
-      //   user: "admin"
-      // });
-      var item_1 = new ItemModel({
-        id: "itemid-1-1",
-        body: "Item 1's body",
-        tldr: "Item 1",
-        user: "yedi"
-      });
-      var item_2 = new ItemModel({
-        id: "itemid-2-2",
-        body: "Item 2's body",
-        tldr: "Item 2",
-        user: "nkessel"
-      });
-      // var item_3 = new ItemModel({
-      //   id: "itemid-3-3",
-      //   body: "Item 3's body",
-      //   tldr: "Item 3",
-      //   user: "nkessel"
-      // });
-      var item_4 = new ItemModel({
-        id: "itemid-4-4",
-        body: "Item 4's body",
-        tldr: "Item 4",
-        user: "nkessel"
-      });
-      var item_5 = new ItemModel({
-        id: "itemid-5-5",
-        body: "Item 5's body",
-        tldr: "Item 5",
-        user: "nkessel"
-      });
-      var rel_1 = new RelModel({
-        id: "arel-1",
-        linked_by: "yedi",
-        parent: "itemid-1-1",
-        child: "itemid-2-2",
-        upvotes: 80,
-        downvotes: 11
-      });
-      var rel_2 = new RelModel({
-        id: "arel-2",
-        linked_by: "yedi",
-        parent: "itemid-2-2",
-        child: "itemid-1-1",
-        upvotes: 80,
-        downvotes: 64
-      });
-      var rel_3 = new RelModel({
-        id: "arel-3",
-        linked_by: "yedi",
-        parent: "itemid-2-2",
-        child: "itemid-3-3",
-        upvotes: 80,
-        downvotes: 22
-      });
-      var item_3 = new ItemModel({
-        id: "itemid-3-3",
-        body: "Item 3's body",
-        tldr: "Item 3",
-        user: "nkessel"
-      });
-      var rel_4 = new RelModel({
-        id: "arel-4",
-        linked_by: "yedi",
-        parent: "itemid-2-2",
-        child: "itemid-4-4",
-        upvotes: 80,
-        downvotes: 22
-      });
-      var rel_root = new RelModel({
-        id: "rel-root",
-        linked_by: "yedi",
-        parent: "itemid-2-2",
-        child: "4f387a9993e9ce7288000f93",
-        upvotes: 80,
-        downvotes: 22
-      });
-      var rel_6 = new RelModel({
-        id: "arel-6",
-        linked_by: "yedi",
-        parent: "itemid-1-1",
-        child: "itemid-4-4",
-        upvotes: 80,
-        downvotes: 22
-      });
 
       datastore.addTo('items', root_node_info.item);
+      datastore.addTo('items', initial_items);
       datastore.addTo('rels', root_node_info.rel);
-      sd.collection.add([root_node_info.rel]);
+      datastore.addTo('rels', initial_rels);
+      sd.addSlide(root_node_info.rel);
 
-      // datastore.items.add([item_1, item_2, item_3, item_4, item_5]);
-      // datastore.rels.add([rel_1, rel_2, rel_3, rel_4, rel_6, rel_root]);
+      //add rel branches to the slide_display
+      if (rel_ids !== undefined) {
+        for (var i = 0; i < rel_ids.length; i++) {
+          if (rel_ids[i] !== sd.collection.at(i)) {
+            sd.pop(i);
+            sd.collection.add(rel_ids.slice(i, rel_ids.length));
+            break;
+          }
+        }
+      }
 
       $("#main").html(sd.render().el);
-      
-      // if (sd.collection.length === 0) {
-      //   addRootRel(item_id);
-      // }
-      
-      // sd.collection.add([rel_1]);
-      // sd.collection.add([rel_2]);
-      // sd.collection.add([rel_3]);
-      // sd.collection.add([rel_4]);
-      // sd.collection.add([rel_5]);
-      //setTimeout(function() { sd.pop(2); }, 3000);
-      
-
-      /*
-      var node = new NodeView({ model: rel_1 });      
-      $("#parent-node").html( node.render().el );
-
-      var rel_child = rel_1.get("child");
-
-      var cl = $("<ul />")
-          .attr("id", "cl_" + rel_1.id);
-
-      rel_child.get("child_rels").each(function(rel, index) {
-        var child = new ChildView({ model: rel});
-        cl.append(child.render().el);
-      });
-
-      var children_el = $("<span />")
-          .addClass("children")
-          .append(cl);
-
-      $("#parent-node").append(children_el);
-      */
 
       // Attach the tutorial to the DOM
       /*
@@ -222,7 +114,7 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
     app.router = new Router();
 
     // Trigger the initial route and enable HTML5 History API support
-    Backbone.history.start({ pushState: true });
+    Backbone.history.start({ pushState: true, root: "" });
   });
 
   // All navigation that is relative should be passed through the navigate

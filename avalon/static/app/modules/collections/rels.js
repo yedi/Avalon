@@ -2,7 +2,7 @@ define([
   'use!underscore', 
   'use!backbone',
 
-  'static/app/modules/models/rel.js'
+  'modules/models/rel'
 ], 
 function(_, Backbone, Rel){
 	var RelsCollection = Backbone.Collection.extend({

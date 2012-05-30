@@ -2,7 +2,7 @@ define([
   'use!underscore', 
   'use!backbone',
 
-  'static/app/modules/models/item.js'
+  'modules/models/item'
 ], 
 function(_, Backbone, Item){
 	var ItemsCollection = Backbone.Collection.extend({

@@ -6,7 +6,7 @@ define([
 
   //modules
   // "modules/models/item",
-  'static/app/modules/models/item.js'
+  'modules/models/item'
 ], 
 
 function(namespace, _, Backbone, Item) {
