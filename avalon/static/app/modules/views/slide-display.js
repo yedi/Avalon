@@ -38,7 +38,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
 
       _.bindAll(this, 'render');
 
-      // this.collection.bind('add',     this.addOne);
+      this.collection.bind('add',     this.addOne);
       this.collection.bind('all',     this.render);
     },
 
@@ -72,7 +72,16 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       return this;
     },
 
-    addSlide: function(rel) {
+    addSlides: function(rels) {
+      rels = _.isArray(rels) ? rels.slice() : [rels];
+      self = this;
+      _.each(rels, function(rel) { self.addSlide(rel, false); })
+    },
+
+    addSlide: function(rel, animate) {
+      if (arguments < 2) {
+        animate = true;
+      }
       this.collection.add(rel);
       rel = this.collection.get(rel.id);
       $(this.el).find('#slideInner').css('width', this.slideWidth * this.collection.length + 1);
@@ -81,9 +90,11 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       new_node_el = this.createNodeEl(new_node_el, rel);
       $(this.el).find('#slideInner').append(new_node_el);
 
-      if (this.collection.length > 1) this.currentPosition = this.collection.length-2;
-      else this.currentPosition = 0;
-      this.moveTo();
+      if(animate) {
+        if (this.collection.length > 1) this.currentPosition = this.collection.length-2;
+        else this.currentPosition = 0;
+        this.moveTo();
+      }
     },
 
     createNodeEl: function(ele, rel) {
@@ -116,6 +127,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
     moveToH: function (e) {
       var num = parseInt($(e.currentTarget).attr('id').split('-')[1], 10);
       this.moveTo(num);
+      return false;
     },
 
     clickBranch: function(e) {
@@ -128,14 +140,20 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
 
       //make the new url for pushstate
       var oldpath = document.location.pathname;
-      oldpath = oldpath.substring(0, oldpath.lastIndexOf('/') + 1);
-      if (oldpath.indexOf('/r/') === -1) oldpath += 'r/'
+      if (oldpath.indexOf('/r/') === -1) {
+        if (oldpath.charAt(oldpath.length-1) !== '/') oldpath += '/';
+        oldpath += 'r/';
+      }
+      else oldpath = oldpath.substring(0, oldpath.lastIndexOf('/') + 1);
+
       var newpath = this.collection.reduce(function (pathstring, rel) {
         if (rel.id === 'root') return pathstring;
         if (pathstring === oldpath) return pathstring + rel.id;
         return pathstring + '-' +  rel.id
       }, oldpath);
+      
       history.pushState({}, "", newpath);
+      return false;
     },
 
     displayBranch: function(branch_id, pos) {

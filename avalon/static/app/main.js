@@ -27,9 +27,9 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
   var Router = Backbone.Router.extend({
     routes: {
       "": "index",
-      "i/:item_id": "index",
-      "r/:rel_ids": "index",
-      "i/:item_id/r/:rel_ids": "index",
+      "i/:item_id": "index_item",
+      "r/:rel_ids": "index_rels",
+      "i/:item_id/r/:rel_ids": "index_item_rels",
       "*hash": "catchAll"
       //":hash": "index"
     },
@@ -45,9 +45,21 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
       window.location = document.location.origin + "/" + hash;
     },
 
-    index: function(item_id, rel_ids) {
+    index: function() {
+      this.index_item_rels(undefined, undefined);
+    },
+
+    index_item: function(item_id) {
+      this.index_item_rels(item_id, undefined);
+    },
+
+    index_rels: function(rel_ids) {
+      this.index_item_rels(undefined, rel_ids)
+    },
+
+    index_item_rels: function(item_id, rel_ids) {
       if (item_id === undefined) {
-        item_id = 'root'; //change this to the root item
+        item_id = '4f387a9993e9ce7288000f93'; //change this to the root item
       }
 
       if (rel_ids !== undefined) {
@@ -66,20 +78,42 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
       datastore.addTo('items', initial_items);
       datastore.addTo('rels', root_node_info.rel);
       datastore.addTo('rels', initial_rels);
-      sd.addSlide(root_node_info.rel);
+
+      //make sure the proper item is set as the first rel in sd
+      if (sd.collection.length !== 0) {
+        if (sd.collection.at(0).get('child').get('id') !== item_id) {
+          sd.pop(0);
+          sd.addSlide( new RelModel({ id: 'root', child: item_id }))
+        }
+      }
+      else {
+        sd.addSlide(root_node_info.rel);
+      }
 
       //add rel branches to the slide_display
       if (rel_ids !== undefined) {
         for (var i = 0; i < rel_ids.length; i++) {
-          if (rel_ids[i] !== sd.collection.at(i)) {
-            sd.pop(i);
-            sd.collection.add(rel_ids.slice(i, rel_ids.length));
-            break;
+          if (i < sd.collection.length - 1) {
+            if (rel_ids[i] === sd.collection.at(i+1).get('id')) { // i + 1 and just i because the first element is the root item
+              continue;
+            }
+            else sd.pop(i+1);
           }
+
+          var remaining_rel_ids = rel_ids.slice(i, rel_ids.length);
+          // remaining_rel_ids = _.map(remaining_rel_ids, function(rel_id) { return datastore.rels.get(rel_id); });
+          var remaining_rels = _.map(remaining_rel_ids, function(rel_id) { return new RelModel({id: rel_id}) });
+          sd.addSlides(remaining_rels);
+          break;  
         }
+        sd.pop(rel_ids.length + 1);
+      }
+      else {
+        sd.pop(1);
       }
 
       $("#main").html(sd.render().el);
+      sd.moveTo(sd.collection.length-2);
 
       // Attach the tutorial to the DOM
       /*
