@@ -114,6 +114,8 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
 
       $("#main").html(sd.render().el);
       sd.moveTo(sd.collection.length-2);
+      sd.delegateEvents();
+
 
       // Attach the tutorial to the DOM
       /*
@@ -145,6 +147,7 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
   jQuery(function($) {
     // Define your master router on the application namespace and trigger all
     // navigation from this instance.
+    Backbone.Relational.showWarnings = false;
     app.router = new Router();
 
     // Trigger the initial route and enable HTML5 History API support
