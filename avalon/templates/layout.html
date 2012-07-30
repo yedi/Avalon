@@ -12,6 +12,7 @@
 // });
 
 var session = {
+  logged_in: {% if session.logged_in %}true{% else %}false{% endif %},
   username: '{{ session.username }}'
 };
 </script>

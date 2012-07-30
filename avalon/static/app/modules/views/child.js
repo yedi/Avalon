@@ -20,6 +20,7 @@ define([
     initialize: function() {
       this.id = "c_" + this.model.id;
       _.bindAll(this, 'render');
+      this.model.on('remove', this.clear, this);
       this.model.bind('change', this.render);
       // if (this.model.get('child')) {
       //   this.model.get('child').bind('change', this.render);
@@ -41,7 +42,9 @@ define([
 
     // Remove the item, destroy the model.
     clear: function() {
-      this.model.clear();
+      this.model.clear({silent: true});
+      this.undelegateEvents();
+      this.remove();
     }
 
   });

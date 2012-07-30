@@ -29,9 +29,13 @@ function(namespace, _, Backbone, Items, Rels) {
       this.rels = new Rels();
       this.items = new Items();
       this.clist = {}; //children list
+
+      //events that change state
       namespace.app.on('postReply', this.postReply, this);
       namespace.app.on('postLink', this.postLink, this);
+      namespace.app.on('deleteRel', this.deleteRel, this);
 
+      //events for getting data
       namespace.app.on('needCompleteRel', this.getCompleteRel, this);
       namespace.app.on('needChildren', this.getItemChildren, this);
       namespace.app.on('needParents', this.getItemParents, this);
@@ -171,6 +175,15 @@ function(namespace, _, Backbone, Items, Rels) {
           self.addTo(self.items, data.rel_child);
           namespace.app.trigger('postedLink', data.new_rel._id);
         });
+    },
+
+    deleteRel: function(rel) {
+      $.post('/deleteRel', {username: session.username, rel_id: rel.id}, 
+      function (data)
+      {
+        namespace.app.trigger('relDeleted', rel.id);
+        rel.trigger('destroy', rel, rel.collection);
+      });
     }
   });
   return DataStore;

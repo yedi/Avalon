@@ -47,6 +47,7 @@ define([
       'click .copy-id-btn': 'showCIDiv',
       'click .link-btn': 'showLinkDiv',
       'click .parents-btn': 'showParentsDiv',
+      'click .del-btn': 'showDeleteDiv',
 
       //submissions to server
       'click .pr-button': 'submitPost',
@@ -114,7 +115,29 @@ define([
     },
 
     createPostDiv: function() {
-        $(this.el).find('.children').before(this.nrTemplate());
+        var ret = true;
+        if (session.logged_in) $(this.el).find('.children').before(this.nrTemplate());
+        else alert('You must be logged in to leave a reply.');
+    },
+
+    toggleReplyDiv: function() {
+      if ($(this.el).find('.post-div').length === 0) {
+        this.createPostDiv();
+        // $(this.el).find('.post-button').text('Hide');
+        // return;
+      }
+
+      if ($(this.el).find('.post-div').length === 0) return;
+
+      $(this.el).find('.post-div').slideToggle('fast');
+
+      var $post_button = $(this.el).find('.post-button');
+      if ('Reply' === $post_button.text()) {
+        $post_button.text('Hide')
+      }
+      else {
+        $post_button.text('Reply')
+      }
     },
 
     createMoreDiv: function () {
@@ -127,13 +150,6 @@ define([
           .attr('onclick', 'return false;')
           .text('View Parents');
 
-      var link_btn = $('<a />')
-          .addClass('link-btn')
-          .attr('href', '#')
-          .attr('data-bypass', 'data-bypass')
-          .attr('onclick', 'return false;')
-          .text('Link an item');
-
       var copy_id_btn = $('<a />')
           .addClass('copy-id-btn')
           .attr('href', '#')
@@ -141,12 +157,25 @@ define([
           .attr('onclick', 'return false;')
           .text('Get link ID');
 
-      var subscribe_btn = $('<a />')
-          .addClass('subscribe-btn')
-          .attr('href', '#')
-          .attr('data-bypass', 'data-bypass')
-          .attr('onclick', 'return false;')
-          .text('Subscribe');
+      if (session.logged_in) {
+        var link_btn = $('<a />')
+            .addClass('link-btn')
+            .attr('href', '#')
+            .attr('data-bypass', 'data-bypass')
+            .attr('onclick', 'return false;')
+            .text('Link an item');
+
+        var subscribe_btn = $('<a />')
+            .addClass('subscribe-btn')
+            .attr('href', '#')
+            .attr('data-bypass', 'data-bypass')
+            .attr('onclick', 'return false;')
+            .text('Subscribe');  
+      }
+      else {
+        var link_btn = "",
+            subscribe_btn = "";
+      }
 
       if (item.get('user') === session.username || this.model.get('linked_by') === session.username) {
         var del_btn = $('<a />')
@@ -191,24 +220,6 @@ define([
       $(this.el).find('.node-footer').after($more_div);
     },
 
-    toggleReplyDiv: function() {
-      if ($(this.el).find('.post-div').length === 0) {
-        this.createPostDiv();
-        // $(this.el).find('.post-button').text('Hide');
-        // return;
-      }
-
-      $(this.el).find('.post-div').slideToggle('fast');
-
-      var $post_button = $(this.el).find('.post-button');
-      if ('Reply' === $post_button.text()) {
-        $post_button.text('Hide')
-      }
-      else {
-        $post_button.text('Reply')
-      }
-    },
-
     toggleMoreDiv: function() {
       if ($(this.el).find('.more-div').length === 0) {
         this.createMoreDiv();
@@ -217,6 +228,48 @@ define([
       }
 
       $(this.el).find('.more-div').slideToggle('fast');
+    },
+
+    /*
+     * creates the delete div for a node
+     */
+    createDeleteDiv: function() {
+      var self = this;
+      var yes_btn = $('<button />')
+          .addClass('btn')
+          .css('margin-right', '20px')
+          .text('Yes')
+          .click(function() {
+            $(this).parent().html("Deleting...");
+            namespace.app.trigger('deleteRel', self.model);
+          });
+
+      var no_btn = $('<button />')
+          .addClass('btn')
+          .text('No')
+          .click(function() {
+            $(this).parent().hide('fast');
+          });
+
+      var del_div = $('<div />')
+          .addClass('opt-div del-div')
+          .append('Are you sure you want to delete this item? <br />', yes_btn, no_btn);
+
+      return del_div;
+    },
+
+    showDeleteDiv: function() {
+      var item = this.model.get('child');
+      $md = $(this.el).find('.more-div');
+
+      //if del-div doesn't yet exist, create it
+      if ($md.find('.del-div').length === 0) {
+        var $del_div = this.createDeleteDiv();
+        $md.append($del_div);
+      }
+
+      $md.find('.opt-div').hide();
+      $md.find('.del-div').show('fast');
     },
 
     /*
@@ -333,7 +386,7 @@ define([
 
       //if link-div doesn't yet exist, create it
       if ($md.find('.link-div').length === 0) {
-        $link_div = this.createLinkDiv();
+        var $link_div = this.createLinkDiv();
         $md.append($link_div);
       }
 

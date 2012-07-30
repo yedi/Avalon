@@ -42,6 +42,7 @@ function(namespace, $, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, R
       this.collection.bind('add',     this.addOne);
       this.collection.bind('all',     this.render);
       namespace.app.on('redelegateEvents', this.delegateEvents, this);
+      namespace.app.on('relDeleted', this.handleRelDeleted, this);
     },
 
     // Re-rendering only updates the browse history
@@ -199,6 +200,16 @@ function(namespace, $, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, R
       col.remove(rest);
       if (this.currentPosition >= this.collection.length) this.currentPosition = this.collection.length - 2;
       this.moveTo();
+    },
+
+    handleRelDeleted: function(rel_id) {
+      var col = this.collection;
+      var branch_rel = col.get(rel_id)
+      if (branch_rel === undefined) return;
+
+      var pos = col.indexOf(branch_rel);
+      this.pop(pos);
+      return;
     },
 
     // Remove the item, destroy the model.
