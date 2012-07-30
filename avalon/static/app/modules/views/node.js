@@ -44,7 +44,8 @@ define([
     events: {
       'click .post-button': 'toggleReplyDiv',
       'click .pr-button': 'submitPost',
-      'click .mi-button': 'toggleMoreDiv'
+      'click .mi-button': 'toggleMoreDiv',
+      'click .copy-id-btn': 'showCIDiv'
     },
 
     // The NodeView listens for changes to its model, re-rendering. Since there's
@@ -110,8 +111,7 @@ define([
     },
 
     createMoreDiv: function () {
-      var slide_id = this.model.id;
-      var m_item = this.model.get('child');
+      var item = this.model.get('child');
 
       // var moreBtnHandler = function() {
       //   var md = $(this).parent();
@@ -135,40 +135,46 @@ define([
       var parents_btn = $('<a />')
           .addClass('parents-btn')
           .attr('href', '#')
+          .attr('data-bypass', 'data-bypass')
           .attr('onclick', 'return false;')
-          .text('View Parents')
+          .text('View Parents');
 
       var link_btn = $('<a />')
           .addClass('link-btn')
           .attr('href', '#')
+          .attr('data-bypass', 'data-bypass')
           .attr('onclick', 'return false;')
-          .text('Link an item')
+          .text('Link an item');
 
       var copy_id_btn = $('<a />')
           .addClass('copy-id-btn')
           .attr('href', '#')
+          .attr('data-bypass', 'data-bypass')
           .attr('onclick', 'return false;')
-          .text('Get link ID')
+          .text('Get link ID');
 
       var subscribe_btn = $('<a />')
           .addClass('subscribe-btn')
           .attr('href', '#')
+          .attr('data-bypass', 'data-bypass')
           .attr('onclick', 'return false;')
-          .text('Subscribe')
+          .text('Subscribe');
 
-      if (m_item.get('user') === session.username || this.model.get('linked_by') === session.username) {
+      if (item.get('user') === session.username || this.model.get('linked_by') === session.username) {
         var del_btn = $('<a />')
             .addClass('del-btn')
             .attr('href', '#')
+            .attr('data-bypass', 'data-bypass')
             .attr('onclick', 'return false;')
-            .text('Delete')
+            .text('Delete');
 
-        if (m_item.get('user') === session.username) {
+        if (item.get('user') === session.username) {
           var edit_btn = $('<a />')
               .addClass('edit-btn')
               .attr('href', '#')
+              .attr('data-bypass', 'data-bypass')
               .attr('onclick', 'return false;')
-              .text('Edit')
+              .text('Edit');
         }
       }
       else {
@@ -220,6 +226,28 @@ define([
       }
 
       $(this.el).find('.more-div').slideToggle('fast');
+    },
+
+    showCIDiv: function() {
+      var item = this.model.get('child');
+      $md = $(this.el).find('.more-div');
+
+      //if copy-id-div doesn't yet exist, create it
+      if ($md.find('.copy-id-div').length === 0) {
+        var $link_id = $('<code />')
+            .css('font-size', '111%')
+            .append(item.get('id'));
+
+        var $ci_div = $('<div />')
+            .addClass('opt-div copy-id-div')
+            .css('display', 'none')
+            .append("Link ID:  ", $link_id);
+
+        $md.append($ci_div);
+      }
+
+      $md.find('.opt-div').hide();
+      $md.find('.copy-id-div').show('fast');
     },
 
     submitPost: function() {
