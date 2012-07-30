@@ -68,8 +68,6 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
 
       var sd = this.sd;
       var datastore = this.datastore;
-      sd.on('needCompleteRel', datastore.getCompleteRel, datastore);
-      sd.on('needChildren', datastore.getItemChildren, datastore);
 
       var route = this;
       // var tutorial = new Example.Views.Tutorial();
@@ -114,7 +112,8 @@ function(namespace, jQuery, Backbone, ItemModel, RelModel, Rels, slideDisplay, D
 
       $("#main").html(sd.render().el);
       sd.moveTo(sd.collection.length-2);
-      sd.delegateEvents();
+      namespace.app.trigger('redelegateEvents');
+      //sd.delegateEvents();
 
 
       // Attach the tutorial to the DOM

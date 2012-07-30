@@ -1,0 +1,6 @@
+error checking:
+	empty body when posting
+	
+	
+client:
+	test to make sure the rel being displayed is actually connected to the parent displayed on the screen

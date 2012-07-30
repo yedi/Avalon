@@ -10,6 +10,10 @@
 // $(document).ready(function() {
 //   $('#{{ tab }}').addClass('active');
 // });
+
+var session = {
+  username: '{{ session.username }}'
+};
 </script>
 
 <meta charset="utf-8">
@@ -22,7 +26,7 @@
 <div class=page>
   <header class = "header">
   <div class = "container">
-  <a id="home-text"  href="{{ url_for('index') }}" ><span class="h1">Avalon</span></a>
+  <a id="home-text" data-bypass href="{{ url_for('index') }}" ><span class="h1">Avalon</span></a>
          <span id="right-links">
         {% if not session.logged_in %}
           <a href="{{ url_for('login') }}">Login</a> | 

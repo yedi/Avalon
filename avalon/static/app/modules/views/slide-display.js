@@ -1,4 +1,5 @@
 define([
+  'namespace',
   'jquery', 
   'use!underscore', 
   'use!backbone',
@@ -9,7 +10,7 @@ define([
   'modules/models/rel',
   "modules/collections/rels"
 ], 
-function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
+function(namespace, $, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
   var SlideDisplay = Backbone.View.extend({
 
     tagName:  "div",
@@ -40,6 +41,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
 
       this.collection.bind('add',     this.addOne);
       this.collection.bind('all',     this.render);
+      namespace.app.on('redelegateEvents', this.delegateEvents, this);
     },
 
     // Re-rendering only updates the browse history
@@ -49,7 +51,7 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
       $(el).find('#browse-history').html('curpos: ' + this.currentPosition);
       this.collection.each(function(rel, pos) {
         if (rel.get('loaded') === false || !rel.get('child')) {
-          var disp_text = "Loading..."
+          var disp_text = "Loading...";
         }
         else {
           var disp_text = rel.get('child').get('display_tldr');
@@ -99,8 +101,8 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
 
     createNodeEl: function(ele, rel) {
       var node = new NodeView({ model: rel });
-      node.on('needCompleteRel', this.needCompleteRel, this);
-      node.on('needChildren', this.needChildren, this);
+      // node.on('needCompleteRel', this.needCompleteRel, this);
+      // node.on('needChildren', this.needChildren, this);
 
       ele.html( node.render().el );
       return ele;
@@ -112,6 +114,10 @@ function($, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, Rels){
 
     needChildren: function(item) {
       this.trigger('needChildren', item);
+    },
+
+    postReply: function(item_id, reply_data) {
+      this.trigger('postReply', item_id, reply_data);
     },
 
     moveTo: function(pos) {

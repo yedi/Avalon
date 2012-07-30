@@ -29,6 +29,9 @@ function(namespace, _, Backbone, Items, Rels) {
       this.rels = new Rels();
       this.items = new Items();
       this.clist = {}; //children list
+      namespace.app.on('postReply', this.postReply, this);
+      namespace.app.on('needCompleteRel', this.getCompleteRel, this);
+      namespace.app.on('needChildren', this.getItemChildren, this);
     },
 
     //adds new mongo models to a collection. If a model already exists, it overwrites the attributes.
@@ -124,7 +127,22 @@ function(namespace, _, Backbone, Items, Rels) {
         item.set('children_loaded', true);
       });
     },
-    
+
+    postReply: function(item_id, reply_data) {
+      //alert(item_id + "\ntldr:" + reply_data.tldr + "\nbody:" + reply_data.body)
+      var self = this;
+      $.post('/add' ,{  username: session.username, 
+                        tldr: reply_data.tldr, 
+                        body: reply_data.body, 
+                        parent: item_id, 
+                        tags: ""}, 
+      function (data)
+      {
+        self.addTo(self.rels, data.rel);
+        self.addTo(self.items, data.item);
+        namespace.app.trigger('postedReply', 'item_id', data.rel._id);
+      });
+    }
   });
   return DataStore;
 });
