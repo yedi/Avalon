@@ -30,6 +30,8 @@ function(namespace, _, Backbone, Items, Rels) {
       this.items = new Items();
       this.clist = {}; //children list
       namespace.app.on('postReply', this.postReply, this);
+      namespace.app.on('postLink', this.postLink, this);
+
       namespace.app.on('needCompleteRel', this.getCompleteRel, this);
       namespace.app.on('needChildren', this.getItemChildren, this);
     },
@@ -140,8 +142,21 @@ function(namespace, _, Backbone, Items, Rels) {
       {
         self.addTo(self.rels, data.rel);
         self.addTo(self.items, data.item);
-        namespace.app.trigger('postedReply', 'item_id', data.rel._id);
+        namespace.app.trigger('postedReply', data.rel._id);
       });
+    },
+
+    postLink: function(item_id, link_id) {
+      //alert('Linking ' + link_id + ' to ' + item_id);
+      //homeless: 4f387a9a93e9ce7288001078
+      var self = this;
+      $.post("/addLink", {parent: item_id, username: session.username, link_item: link_id}, 
+        function (data)
+        {
+          self.addTo(self.rels, data.new_rel);
+          self.addTo(self.items, data.rel_child);
+          namespace.app.trigger('postedLink', data.new_rel._id);
+        });
     }
   });
   return DataStore;

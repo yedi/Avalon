@@ -43,9 +43,13 @@ define([
     // The DOM events specific to an item.
     events: {
       'click .post-button': 'toggleReplyDiv',
-      'click .pr-button': 'submitPost',
       'click .mi-button': 'toggleMoreDiv',
-      'click .copy-id-btn': 'showCIDiv'
+      'click .copy-id-btn': 'showCIDiv',
+      'click .link-btn': 'showLinkDiv',
+
+      //submissions to server
+      'click .pr-button': 'submitPost',
+      'click .submit-link-button': 'submitLink'
     },
 
     // The NodeView listens for changes to its model, re-rendering. Since there's
@@ -56,6 +60,7 @@ define([
       this.model.on('change', this.render);
       this.model.on('update:child', this.render);
       namespace.app.on('postedReply', this.render, this);
+      namespace.app.on('postedLink', this.render, this);
       namespace.app.on('redelegateEvents', this.delegateEvents, this);
 
       this.id = "n_" + this.model.id;
@@ -112,25 +117,6 @@ define([
 
     createMoreDiv: function () {
       var item = this.model.get('child');
-
-      // var moreBtnHandler = function() {
-      //   var md = $(this).parent();
-      //   var buttons = ['parents-btn', 'link-btn', 'del-btn', 'edit-btn', 'copy-id-btn', 'subscribe-btn'];
-      //   var divs = ['.parents-div', '.link-div', '.del-div', '.edit-div', '.copy-id-div', 'subscribe-div'];
-      //   var funcs = [createParentsDiv, createLinkDiv, createDeleteDiv, createEditDiv, createCIDiv, createSubDiv];
-
-      //   var idof = buttons.indexOf($(this).attr('class'));
-      //   if (idof === -1) return;
-
-      //   if (md.find(divs[idof]).length === 0) {
-      //     md.find('.opt-div').hide();
-      //     md.append(funcs[idof](from));
-      //     return;
-      //   }
-
-      //   md.find('.opt-div').hide();
-      //   md.find(divs[idof]).show('fast');
-      // }
 
       var parents_btn = $('<a />')
           .addClass('parents-btn')
@@ -248,6 +234,58 @@ define([
 
       $md.find('.opt-div').hide();
       $md.find('.copy-id-div').show('fast');
+    },
+
+    /*
+     * creates the link div for a node
+     */
+    createLinkDiv: function() {
+      var item = this.model.get('child');
+
+      var item_label = $('<label />').text("Linked item's id:");
+      var item_input = $('<input />')
+          .addClass('span7')
+          .attr('type', 'input')
+          .attr('name', 'link-id');
+      item_input = namespace.dom_helpers.ID().append(item_input);
+      item_input = namespace.dom_helpers.CF().append(item_label, item_input);
+
+      var link_button = $('<button />')
+          .addClass('btn submit-link-button')
+          .text('Submit Link');
+
+      var post_form = $('<div />')
+          .addClass('form-stacked')
+          .css('padding', '0px')
+          .append(item_input, link_button);
+
+      var link_div = $('<div />')
+          .addClass('opt-div link-div')
+          .append(post_form);
+
+      return link_div;
+    },
+
+    showLinkDiv: function() {
+      var item = this.model.get('child');
+      $md = $(this.el).find('.more-div');
+
+      //if link-div doesn't yet exist, create it
+      if ($md.find('.link-div').length === 0) {
+        $link_div = this.createLinkDiv();
+        $md.append($link_div);
+      }
+
+      $md.find('.opt-div').hide();
+      $md.find('.link-div').show('fast');
+    },
+
+    submitLink: function() {
+      var $link_div = $(this.el).find('.link-div');
+      link_id = $link_div.find('input[name="link-id"]').val();
+
+      namespace.app.trigger('postLink', this.model.get('child').get('id'), link_id);
+      $link_div.html('Linking...');
     },
 
     submitPost: function() {

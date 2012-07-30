@@ -40,6 +40,18 @@ function($, _, Backbone) {
       return _.extend({ Views: {} }, additionalProps);
     },
 
+    // Some global dom helpers
+    dom_helpers: {
+      //input div
+      ID: function() {
+        return $('<div />').addClass('input');
+      },
+      //clear fix
+      CF: function() {
+          return $('<div />').addClass('clearfix');
+      }
+    },
+
     // Keep active application instances namespaced under an app object.
     app: _.extend({}, Backbone.Events)
   };
