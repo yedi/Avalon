@@ -46,6 +46,7 @@ define([
       'click .mi-button': 'toggleMoreDiv',
       'click .copy-id-btn': 'showCIDiv',
       'click .link-btn': 'showLinkDiv',
+      'click .parents-btn': 'showParentsDiv',
 
       //submissions to server
       'click .pr-button': 'submitPost',
@@ -62,6 +63,7 @@ define([
       namespace.app.on('postedReply', this.render, this);
       namespace.app.on('postedLink', this.render, this);
       namespace.app.on('redelegateEvents', this.delegateEvents, this);
+      namespace.app.on('newParents', this.handleNewParents, this);
 
       this.id = "n_" + this.model.id;
     },
@@ -162,6 +164,9 @@ define([
               .attr('onclick', 'return false;')
               .text('Edit');
         }
+        else {
+          var edit_btn = "";
+        }
       }
       else {
         var del_btn = "",
@@ -212,6 +217,62 @@ define([
       }
 
       $(this.el).find('.more-div').slideToggle('fast');
+    },
+
+    /*
+     * creates the parents div for a node
+     */
+    createParentsDiv: function() {
+      var parent = function(parent_item) {
+        var $parent_link = $('<a />')
+            .attr('href', '/i/' + parent_item.get('id'))
+            .attr('data-bypass', 'data-bypass')
+            .addClass('parent-link')
+            .text(parent_item.get('display_tldr'));
+        return $parent_link;
+      };
+
+      var $pl = $('<div />')
+          .addClass('opt-div parents-div')
+          .text('Parents: ');
+
+      //if the parents hasn't been loaded yet
+      if (!this.model.get('child').get('parents_loaded')) {
+        $pl.html('Loading...');
+        namespace.app.trigger('needParents', this.model.get('child'));
+        return $pl;
+      }
+
+      this.model.get('child').get("parent_rels").each(function(rel, index) {
+        if (index >= 5) return;
+        $pl.append(parent(rel.get('parent')), " ");
+      });
+
+      return $pl;
+    },
+
+    showParentsDiv: function(rerender) {
+      if (arguments < 1) rerender = false;
+
+      var item = this.model.get('child');
+      var $md = $(this.el).find('.more-div');
+
+      //if link-div doesn't yet exist, create it
+      if ($md.find('.parents-div').length === 0 || rerender) {
+        $md.find('.parents-div').remove();
+        var $parents_div = this.createParentsDiv();
+        $md.append($parents_div);
+      }
+
+      $md.find('.opt-div').hide();
+      $md.find('.parents-div').show('fast');
+    },
+
+    handleNewParents: function(item_id) {
+      if (this.model.get('child').get('id') === item_id ||
+          $(this.el).find('.parents-div').is(':visible')) {
+        this.showParentsDiv(true);
+      }
     },
 
     showCIDiv: function() {

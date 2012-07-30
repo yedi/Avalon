@@ -34,6 +34,7 @@ function(namespace, _, Backbone, Items, Rels) {
 
       namespace.app.on('needCompleteRel', this.getCompleteRel, this);
       namespace.app.on('needChildren', this.getItemChildren, this);
+      namespace.app.on('needParents', this.getItemParents, this);
     },
 
     //adds new mongo models to a collection. If a model already exists, it overwrites the attributes.
@@ -129,6 +130,19 @@ function(namespace, _, Backbone, Items, Rels) {
         item.set('children_loaded', true);
       });
     },
+
+    getItemParents: function(item) {
+      var self = this;
+      $.get('/api/parents/' + item.id, 
+      function (data)
+      {
+        self.addTo(self.rels, data.parent_rels);
+        self.addTo(self.items, data.parent_items);
+        item.set({'parents_loaded': true}, {silent: true});
+        namespace.app.trigger('newParents', item.id);
+      });
+    },
+
 
     postReply: function(item_id, reply_data) {
       //alert(item_id + "\ntldr:" + reply_data.tldr + "\nbody:" + reply_data.body)
