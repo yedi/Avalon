@@ -1,18 +1,49 @@
-<span style="display: none" class="post-div">
-	<div class="form-stacked">
+<<% 
+	if (typeof(body) != "undefined") { 
+		%>div<% 
+	} else { 
+		%>span<% 
+	} %> style="display: none" class="<% 
+if (typeof(body) != "undefined") { 
+    %>opt-div edit-div<% 
+} else { 
+	%>post-div<% 
+} %>">
+	<div class="form-stacked" <% 
+				if (typeof(body) != "undefined") { %>style="padding: 0px;"<% } 
+				%>>
 		<div class="clearfix">
 			<label>Body:</label>
 			<div class="input">
-				<textarea class="span7" name="body" rows="3"></textarea>
+				<textarea class="span7" name="body" rows="3"><% 
+				if (typeof(body) != "undefined") { %><%= body %><% } 
+				%></textarea>
 			</div>
 		</div>
 		<div class="clearfix">
 			<label>tldr: <span class="tldr-msg">(Not required)</span></label>
 			<div class="input">
-				<input class="span7" type="text" name="tldr">
+				<input class="span7" type="text" name="tldr" value="<% 
+				if (typeof(tldr) != "undefined") { %><%= tldr %><% } 
+				%>">
 			</div>
 		</div>
 		<input type="hidden" name="parent">
-		<button class="btn pr-button">Submit Post</button>
+		<button class="btn <% 
+		if (typeof(body) != "undefined") { 
+    		%>ed-button<% 
+		} else { 
+			%>pr-button<% 
+		} %>"><% 
+		if (typeof(body) != "undefined") { 
+    		%>Submit Edit<% 
+		} else { 
+			%>Submit Post<% 
+		} %></button>
 	</div>
-</span>
+</<% 
+	if (typeof(body) != "undefined") { 
+		%>div<% 
+	} else { 
+		%>span<% 
+	} %>>

@@ -406,8 +406,11 @@ def editItem():
         return "Not edited"
     new_item = db.editItem(item_id, request.form['body'], request.form['tldr'])
 
-    return jsonify(db.prepareForClient([new_item])[0])
-
+    ret_dict = {
+        "item": db.prepareForClient([new_item])[0]
+    }
+    return jsonify(ret_dict)
+    
 
 @app.route('/about')
 def aboutPage():

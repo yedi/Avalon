@@ -36,6 +36,7 @@ function(namespace, _, Backbone) {
 
     initialize: function() {
       this.set_display_tldr(48);
+      this.on('updateTldr', this.set_display_tldr, this);
     }
   });
   return ItemModel;

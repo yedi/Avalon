@@ -48,10 +48,12 @@ define([
       'click .link-btn': 'showLinkDiv',
       'click .parents-btn': 'showParentsDiv',
       'click .del-btn': 'showDeleteDiv',
+      'click .edit-btn': 'showEditDiv',
 
       //submissions to server
       'click .pr-button': 'submitPost',
-      'click .submit-link-button': 'submitLink'
+      'click .submit-link-button': 'submitLink',
+      'click .ed-button': 'submitEdit'
     },
 
     // The NodeView listens for changes to its model, re-rendering. Since there's
@@ -62,6 +64,7 @@ define([
       this.model.on('change', this.render);
       this.model.on('update:child', this.render);
       namespace.app.on('postedReply', this.render, this);
+      namespace.app.on('editedItem', this.render, this);
       namespace.app.on('postedLink', this.render, this);
       namespace.app.on('redelegateEvents', this.delegateEvents, this);
       namespace.app.on('newParents', this.handleNewParents, this);
@@ -228,6 +231,30 @@ define([
       }
 
       $(this.el).find('.more-div').slideToggle('fast');
+    },
+
+    showEditDiv: function() {
+      var item = this.model.get('child');
+      $md = $(this.el).find('.more-div');
+
+      //if edit-div doesn't yet exist, create it
+      if ($md.find('.edit-div').length === 0) {
+        $md.append(this.nrTemplate(this.model.get('child').toJSON()));
+      }
+
+      $md.find('.opt-div').hide();
+      $md.find('.edit-div').show('fast');
+    },
+
+    submitEdit: function() {
+      var $edit_div = $(this.el).find('.edit-div');
+      reply_data = {
+        tldr: $edit_div.find('input[name="tldr"]').val(),
+        body: $edit_div.find('textarea[name="body"]').val()
+      }
+
+      namespace.app.trigger('editItem', this.model.get('child').get('id'), reply_data);
+      $edit_div.html('Editing...');
     },
 
     /*

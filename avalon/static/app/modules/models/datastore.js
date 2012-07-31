@@ -34,6 +34,7 @@ function(namespace, _, Backbone, Items, Rels) {
       namespace.app.on('postReply', this.postReply, this);
       namespace.app.on('postLink', this.postLink, this);
       namespace.app.on('deleteRel', this.deleteRel, this);
+      namespace.app.on('editItem', this.editItem, this);
 
       //events for getting data
       namespace.app.on('needCompleteRel', this.getCompleteRel, this);
@@ -147,6 +148,20 @@ function(namespace, _, Backbone, Items, Rels) {
       });
     },
 
+    editItem: function(item_id, reply_data) {
+      var self = this;
+      $.post('/editItem' ,{ username: session.username, 
+                            tldr: reply_data.tldr, 
+                            body: reply_data.body, 
+                            item_id: item_id, 
+                            tags: ""}, 
+      function (data)
+      {
+        self.addTo(self.items, data.item);
+        namespace.app.trigger('editedItem', data.item._id);
+        self.items.get(item_id).trigger('updateTldr');
+      });
+    },
 
     postReply: function(item_id, reply_data) {
       //alert(item_id + "\ntldr:" + reply_data.tldr + "\nbody:" + reply_data.body)

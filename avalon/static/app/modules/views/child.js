@@ -22,9 +22,6 @@ define([
       _.bindAll(this, 'render');
       this.model.on('remove', this.clear, this);
       this.model.bind('change', this.render);
-      // if (this.model.get('child')) {
-      //   this.model.get('child').bind('change', this.render);
-      // }
       this.model.bind('update:child', this.render);
     },
 
