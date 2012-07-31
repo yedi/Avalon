@@ -35,6 +35,7 @@ function(namespace, _, Backbone, Items, Rels) {
       namespace.app.on('postLink', this.postLink, this);
       namespace.app.on('deleteRel', this.deleteRel, this);
       namespace.app.on('editItem', this.editItem, this);
+      namespace.app.on('subscribeToItem', this.subscribeToItem, this);
 
       //events for getting data
       namespace.app.on('needCompleteRel', this.getCompleteRel, this);
@@ -189,6 +190,15 @@ function(namespace, _, Backbone, Items, Rels) {
           self.addTo(self.rels, data.new_rel);
           self.addTo(self.items, data.rel_child);
           namespace.app.trigger('postedLink', data.new_rel._id);
+        });
+    },
+
+    subscribeToItem: function(item_id) {
+      var self = this;
+      $.post("/subscribeToItem", {username: session.username, item_id: item_id}, 
+        function (data)
+        {
+          namespace.app.trigger('subscribed', item_id);
         });
     },
 

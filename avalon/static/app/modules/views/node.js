@@ -49,6 +49,7 @@ define([
       'click .parents-btn': 'showParentsDiv',
       'click .del-btn': 'showDeleteDiv',
       'click .edit-btn': 'showEditDiv',
+      'click .subscribe-btn': 'showSubDiv',
 
       //submissions to server
       'click .pr-button': 'submitPost',
@@ -68,6 +69,7 @@ define([
       namespace.app.on('postedLink', this.render, this);
       namespace.app.on('redelegateEvents', this.delegateEvents, this);
       namespace.app.on('newParents', this.handleNewParents, this);
+      namespace.app.on('subscribed', this.handleSubscibed, this);
 
       this.id = "n_" + this.model.id;
     },
@@ -297,6 +299,57 @@ define([
 
       $md.find('.opt-div').hide();
       $md.find('.del-div').show('fast');
+    },
+
+    /*
+     * creates the subscribe div for a node
+     */
+    createSubDiv: function() {
+      var self = this;
+      var yes_btn = $('<button />')
+          .addClass('btn')
+          .css('margin-right', '20px')
+          .text('Yes')
+          .click(function() {
+            $(this).parent().html("Subscribing...");
+            namespace.app.trigger('subscribeToItem', self.model.get('child').id);
+          });
+
+      var no_btn = $('<button />')
+          .addClass('btn')
+          .text('No')
+          .click(function() {
+            $(this).parent().hide('fast');
+          });
+
+      var sub_div = $('<div />')
+          .addClass('opt-div subscribe-div')
+          .append('Are you sure you want to subscribe to this item? <br />', yes_btn, no_btn);
+
+      return sub_div;
+    },
+
+    showSubDiv: function() {
+      var item = this.model.get('child');
+      $md = $(this.el).find('.more-div');
+
+      //if del-div doesn't yet exist, create it
+      if ($md.find('.subscribe-div').length === 0) {
+        var $sub_div = this.createSubDiv();
+        $md.append($sub_div);
+      }
+
+      $md.find('.opt-div').hide();
+      $md.find('.subscribe-div').show('fast');
+    },
+
+    handleSubscibed: function(item_id) {
+      if (item_id === this.model.get('child').get('id')) {
+        $(this.el).find('.subscribe-div')
+          .html(' You are now subscribed to this item.<br /> \
+                  Now you can see new posts and comments to this item in your profile page.')
+          .fadeOut(8000);
+      }
     },
 
     /*
