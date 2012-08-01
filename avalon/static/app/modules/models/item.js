@@ -34,15 +34,19 @@ function(namespace, _, Backbone) {
       this.set('display_tldr', this.get('body').substr(0, len));
     },
 
-    initialize: function() {
+    checkIfRoot: function() {
       //check for root node
       if (this.get('tldr') === '_root_title_') {
         this.set('tldr', 'Welcome to Avalon');
         this.set('body', "Avalon is a place for collaborating with each other to solve our world's problems. Browse through the discussion and feel free to contribute.");
       }
+    },
 
+    initialize: function() {
+      this.checkIfRoot();
       this.set_display_tldr(48);
       this.on('updateTldr', this.set_display_tldr, this);
+      this.on('change', this.checkIfRoot, this);
     }
   });
   return ItemModel;
