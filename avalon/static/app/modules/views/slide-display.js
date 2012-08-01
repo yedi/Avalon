@@ -90,7 +90,7 @@ function(namespace, $, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, R
       rel = this.collection.get(rel.id);
       $(this.el).find('#slideInner').css('width', this.slideWidth * this.collection.length + 1);
         
-      new_node_el = $('<span />').addClass('span8 node-slide');
+      var new_node_el = $('<span />').addClass('span8 node-slide');
       new_node_el = this.createNodeEl(new_node_el, rel);
       $(this.el).find('#slideInner').append(new_node_el);
 
@@ -103,9 +103,6 @@ function(namespace, $, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, R
 
     createNodeEl: function(ele, rel) {
       var node = new NodeView({ model: rel });
-      // node.on('needCompleteRel', this.needCompleteRel, this);
-      // node.on('needChildren', this.needChildren, this);
-
       ele.html( node.render().el );
       return ele;
     },

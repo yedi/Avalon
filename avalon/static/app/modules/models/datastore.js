@@ -38,6 +38,7 @@ function(namespace, _, Backbone, Items, Rels) {
       namespace.app.on('subscribeToItem', this.subscribeToItem, this);
 
       //events for getting data
+      namespace.app.on('submitVote', this.submitVote, this);
       namespace.app.on('needCompleteRel', this.getCompleteRel, this);
       namespace.app.on('needChildren', this.getItemChildren, this);
       namespace.app.on('needParents', this.getItemParents, this);
@@ -146,6 +147,19 @@ function(namespace, _, Backbone, Items, Rels) {
         self.addTo(self.items, data.parent_items);
         item.set({'parents_loaded': true}, {silent: true});
         namespace.app.trigger('newParents', item.id);
+      });
+    },
+
+    submitVote: function(rel_id, vote_type) {
+      // alert('rel_id: ' + rel_id + ' -- vote type: ' + vote_type);
+      var self = this;
+      $.post('/vote' ,{rel_id: rel_id, username: session.username, vote_type: vote_type}, 
+      function (data)
+      {
+        var rel_to_change = self.rels.get(rel_id);
+        rel_to_change.set({ upvotes: rel_to_change.get('upvotes') + data.uv_c, 
+                            downvotes: rel_to_change.get('downvotes') + data.dv_c });
+        namespace.app.trigger('voteChange', rel_id);
       });
     },
 

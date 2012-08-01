@@ -52,6 +52,7 @@ define([
       'click .subscribe-btn': 'showSubDiv',
 
       //submissions to server
+      'click .node-vc > a': 'submitVote',
       'click .pr-button': 'submitPost',
       'click .submit-link-button': 'submitLink',
       'click .ed-button': 'submitEdit'
@@ -68,6 +69,7 @@ define([
       namespace.app.on('editedItem', this.render, this);
       namespace.app.on('postedLink', this.render, this);
       namespace.app.on('redelegateEvents', this.delegateEvents, this);
+      namespace.app.on('voteChange', this.handleVoteChange, this);
       namespace.app.on('newParents', this.handleNewParents, this);
       namespace.app.on('subscribed', this.handleSubscibed, this);
 
@@ -472,6 +474,24 @@ define([
 
       $md.find('.opt-div').hide();
       $md.find('.link-div').show('fast');
+    },
+
+    submitVote: function(e) {
+      if (!session.logged_in)  {
+        alert('You must be logged in to vote on posts.');
+        return;
+      }
+
+      var $ele = $(e.currentTarget);
+      if ($ele.hasClass('nv-up')) var vote_type = 'up';
+      else if ($ele.hasClass('nv-down')) var vote_type = 'down';
+      else return;
+
+      namespace.app.trigger('submitVote', this.model.id, vote_type);
+    },
+
+    handleVoteChange: function(rel_id) {
+      if (this.model.id === rel_id) this.render();
     },
 
     submitLink: function() {

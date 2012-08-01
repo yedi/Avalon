@@ -1,7 +1,7 @@
 <!--<span class="node" id="n_<%= is_root ? 'root' : id %>">-->
 	<span class="node-vc">
-		<a class="nv-up" href="#" onclick="return vote('up', id)">+</a>
-		<a class="nv-down" href="#" onclick="return vote('down', id)">-</a>
+		<a class="nv-up" href="#" data-bypass onclick="return false;">+</a>
+		<a class="nv-down" href="#" data-bypass onclick="return false;">-</a>
 		<span class="vc-num"><%= upvotes - downvotes %></span>
 	</span>
 	<span class="node-body span7">
