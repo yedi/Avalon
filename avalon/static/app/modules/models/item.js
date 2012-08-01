@@ -35,6 +35,12 @@ function(namespace, _, Backbone) {
     },
 
     initialize: function() {
+      //check for root node
+      if (this.get('tldr') === '_root_title_') {
+        this.set('tldr', 'Welcome to Avalon');
+        this.set('body', "Avalon is a place for collaborating with each other to solve our world's problems. Browse through the discussion and feel free to contribute.");
+      }
+
       this.set_display_tldr(48);
       this.on('updateTldr', this.set_display_tldr, this);
     }

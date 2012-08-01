@@ -49,7 +49,8 @@ function(namespace, $, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, R
     render: function() {
       this.ren_num += 1;
       el = this.el;
-      $(el).find('#browse-history').html('curpos: ' + this.currentPosition);
+      //$(el).find('#browse-history').html('curpos: ' + this.currentPosition);
+      $(el).find('#browse-history').html('');
       this.collection.each(function(rel, pos) {
         if (rel.get('loaded') === false || !rel.get('child')) {
           var disp_text = "Loading...";
