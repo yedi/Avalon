@@ -6,3 +6,6 @@ extra/*
 data/*
 avalon/views_old.py
 *.dbshell
+env/*
+avalon/tmp/*
+avalon/env/*
