@@ -166,8 +166,7 @@ def vote():
 def postComment():
     username = request.form['username']
     body = request.form['body']
-    parent_id = ObjectId(request.form['parent'])
-    cp_id = ObjectId(request.form['comment_parent'])
+    item_id = ObjectId(request.form['item'])
 
     if db.getUser(username) is None:
         return 'You must have a valid user account to post'
@@ -175,26 +174,24 @@ def postComment():
     if len(request.form['body']) < 1:
         return
 
-    if db.getItem(parent_id) is None or db.getItem(cp_id) is None:
+    if db.getItem(item_id) is None:
         return 'Reply error'
 
-    #insert item
-    item_dict = {
+    #insert comment
+    comment_dict = {
         'body': unicode(body),
         'user': unicode(username),
-        'tags': [u'comment']
+        'item': item_id
     }
-    new_item = db.addItem(item_dict)
 
-    #insert the new rel
-    new_rel = db.addRel(parent_id, new_item._id, username, cp_id)
+    if request.form['reply_to']:
+        comment_dict['reply_to'] = ObjectId(request.form['reply_to'])
 
-    #automatically upvote for the user
-    db.processVote(new_rel._id, request.form['username'], 'up')
+    new_comment = db.addComment(comment_dict)
+    db.processCommentVote(new_comment._id, username, 'up')
 
     ret_dict = {
-        "item": db.prepareForClient([new_item])[0],
-        "rel": db.prepareForClient([db.getRel(new_rel._id)])[0]
+        "comment": db.prepareForClient([new_comment])[0]
     }
     return jsonify(ret_dict)
 

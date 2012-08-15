@@ -22,7 +22,7 @@ def init(host, port, db='test'):
     dbcon = connection[cur_db]
 
     # register the User document with our current connection
-    connection.register([models.Item, models.Relation, models.User])
+    connection.register([models.Item, models.Relation, models.User, models.Comment])
 
     root = getRootItem()
 
@@ -65,6 +65,13 @@ def getItem(item_id, in_json=False):
     if (item is not None) & in_json:
         item = prepareForClient([item])[0]
     return item
+
+
+def getComment(comment_id, in_json=False):
+    comment = connection[cur_db].comments.Comment.find_one({'_id': comment_id})
+    if (comment is not None) & in_json:
+        comment = prepareForClient([comment])[0]
+    return comment
 
 
 def deleteItem(item_id):
@@ -209,6 +216,13 @@ def addItem(item_dict):
     return item
 
 
+def addComment(comment_dict):
+    comment = connection[cur_db].comments.Comment()
+    comment.update(comment_dict)
+    comment.save()
+    return comment
+
+
 def addRel(parent, child, linked_by, comment_parent=None):
     rel = connection[cur_db].relations.Relation()
     linked_by = unicode(linked_by)
@@ -311,6 +325,54 @@ def processVote(rel_id, username, vote_type):
     rel.upvotes += upvote_count
     rel.downvotes += downvote_count
     rel.save()
+
+    return upvote_count, downvote_count
+
+
+def processCommentVote(comment_id, username, vote_type):
+    user = getUser(username)
+    if user is None:
+        return
+    if vote_type == 'up':
+        is_upvote = True
+    else:
+        is_upvote = False
+
+    upvote_count, downvote_count = 0, 0
+
+    comment = getComment(comment_id)
+    if comment is None:
+        return
+
+    vote = None
+    for i, v in enumerate(comment.votes):
+        if v['user'] == username:
+            vote = v
+            v_index = i
+
+    if vote is None:
+        comment.votes.append({'user': username, 'is_upvote': is_upvote})
+        if is_upvote:
+            upvote_count = 1
+        else:
+            downvote_count = 1
+    else:
+        if vote['is_upvote'] == is_upvote:
+            comment.votes.pop(v_index)
+            if is_upvote:
+                upvote_count = -1
+            else:
+                downvote_count = -1
+        else:
+            comment.votes[v_index]['is_upvote'] = is_upvote
+            if is_upvote:
+                upvote_count, downvote_count = 1, -1
+            else:
+                downvote_count, upvote_count = 1, -1
+
+    comment.upvotes += upvote_count
+    comment.downvotes += downvote_count
+    comment.save()
 
     return upvote_count, downvote_count
 

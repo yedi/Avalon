@@ -77,8 +77,7 @@ class Relation(Document):
     use_dot_notation = True
 
     required_fields = ['parent', 'child', 'time_linked', 'linked_by', 'upvotes', 'downvotes']
-    default_values = {'time_linked': datetime.now,
-                      'upvotes': 0, 'downvotes': 0}
+    default_values = {'time_linked': datetime.now, 'upvotes': 0, 'downvotes': 0}
 
     def __repr__(self):
         return '<rel %r>' % (self._id)
@@ -141,3 +140,37 @@ class User(Document):
 
     def __repr__(self):
         return '<User %r>' % (self.name)
+
+
+class Comment(Document):
+    __collection__ = 'comments'
+    structure = {
+        "item":  ObjectId,
+        "body": unicode,
+        "user": unicode,
+        "time_submitted": datetime,
+        "upvotes": int,
+        "downvotes": int,
+        "votes": [{
+            "user": unicode,
+            "is_upvote": bool
+        }],
+        "reply_to": ObjectId
+    }
+
+    validators = {
+    }
+
+    indexes = [
+        {'fields':['user']},
+        {'fields':['item']}
+    ]
+
+    use_dot_notation = True
+
+    required_fields = ['body', 'user', 'time_submitted']
+    default_values = {'time_submitted': datetime.now, 'upvotes': 0, 'downvotes': 0}
+
+    def __repr__(self):
+        return '<Comment %r>' % (self._id)
+
