@@ -43,6 +43,7 @@ function(namespace, $, _, Backbone, sdTemplate, NodeView, ChildView, RelModel, R
       this.collection.bind('all',     this.render);
       namespace.app.on('redelegateEvents', this.delegateEvents, this);
       namespace.app.on('relDeleted', this.handleRelDeleted, this);
+      namespace.app.on('editedItem', this.render);
     },
 
     // Re-rendering only updates the browse history

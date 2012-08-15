@@ -4,3 +4,7 @@ error checking:
 	
 client:
 	test to make sure the rel being displayed is actually connected to the parent displayed on the screen
+
+
+bugs:
+	editing an item doesn't change the tldr already displayed on the page in the parent's child section and in the history. I'm triggering an editedItem even but it doesn't seem to be doing anything

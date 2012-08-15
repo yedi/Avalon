@@ -30,8 +30,8 @@ var session = {
   <a id="home-text" data-bypass href="{{ url_for('index') }}" ><span class="h1">Avalon</span></a>
          <span id="right-links">
         {% if not session.logged_in %}
-          <a href="{{ url_for('login') }}">Login</a> | 
-          <a href="{{ url_for('register') }}">Register</a>
+          <a href="{{ url_for('loginPage') }}">Login</a> | 
+          <a href="{{ url_for('registrationPage') }}">Register</a>
         {% else %}
           {{ session.username }} |
           <a href="{{ url_for('logout') }}">Logout</a>

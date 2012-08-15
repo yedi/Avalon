@@ -153,7 +153,7 @@ function(namespace, _, Backbone, Items, Rels) {
     submitVote: function(rel_id, vote_type) {
       // alert('rel_id: ' + rel_id + ' -- vote type: ' + vote_type);
       var self = this;
-      $.post('/vote' ,{rel_id: rel_id, username: session.username, vote_type: vote_type}, 
+      $.post('/api/vote' ,{rel_id: rel_id, username: session.username, vote_type: vote_type}, 
       function (data)
       {
         var rel_to_change = self.rels.get(rel_id);
@@ -165,7 +165,7 @@ function(namespace, _, Backbone, Items, Rels) {
 
     editItem: function(item_id, reply_data) {
       var self = this;
-      $.post('/editItem' ,{ username: session.username, 
+      $.post('/api/editItem' ,{ username: session.username, 
                             tldr: reply_data.tldr, 
                             body: reply_data.body, 
                             item_id: item_id, 
@@ -181,7 +181,7 @@ function(namespace, _, Backbone, Items, Rels) {
     postReply: function(item_id, reply_data) {
       //alert(item_id + "\ntldr:" + reply_data.tldr + "\nbody:" + reply_data.body)
       var self = this;
-      $.post('/add' ,{  username: session.username, 
+      $.post('/api/add' ,{  username: session.username, 
                         tldr: reply_data.tldr, 
                         body: reply_data.body, 
                         parent: item_id, 
@@ -198,7 +198,7 @@ function(namespace, _, Backbone, Items, Rels) {
       //alert('Linking ' + link_id + ' to ' + item_id);
       //homeless: 4f387a9a93e9ce7288001078
       var self = this;
-      $.post("/addLink", {parent: item_id, username: session.username, link_item: link_id}, 
+      $.post("/api/addLink", {parent: item_id, username: session.username, link_item: link_id}, 
         function (data)
         {
           self.addTo(self.rels, data.new_rel);
@@ -209,7 +209,7 @@ function(namespace, _, Backbone, Items, Rels) {
 
     subscribeToItem: function(item_id) {
       var self = this;
-      $.post("/subscribeToItem", {username: session.username, item_id: item_id}, 
+      $.post("/api/subscribeToItem", {username: session.username, item_id: item_id}, 
         function (data)
         {
           namespace.app.trigger('subscribed', item_id);
@@ -217,7 +217,7 @@ function(namespace, _, Backbone, Items, Rels) {
     },
 
     deleteRel: function(rel) {
-      $.post('/deleteRel', {username: session.username, rel_id: rel.id}, 
+      $.post('/api/deleteRel', {username: session.username, rel_id: rel.id}, 
       function (data)
       {
         namespace.app.trigger('relDeleted', rel.id);
