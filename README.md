@@ -1,4 +1,4 @@
-http://ec2-50-16-106-77.compute-1.amazonaws.com
+http://openthink.org
 
 Avalon is a new kind of discussion platform aimed to give users a more flexible and powerful way of communicating and collaborating.
 
